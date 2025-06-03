@@ -83,55 +83,61 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Detalles: ${widget.ordenTrabajo.folioOT}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, true);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Detalles: ${widget.ordenTrabajo.folioOT}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          elevation: 2,
+          backgroundColor: Colors.indigo.shade800,
+          foregroundColor: Colors.white,
         ),
-        centerTitle: true,
-        elevation: 2,
-        backgroundColor: Colors.indigo.shade800,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Primera fila con Info General y Estado
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Tarjeta de Datos Generales (izquierda)
-                Expanded(flex: 1, child: _buildInfoCard()),
-                const SizedBox(width: 20),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Primera fila con Info General y Estado
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tarjeta de Datos Generales (izquierda)
+                  Expanded(flex: 1, child: _buildInfoCard()),
+                  const SizedBox(width: 20),
 
-                // Tarjeta de Estado y descripción a la derecha
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatusSection(),
-                      const SizedBox(height: 20),
-                      _buildDescriptionSection(),
-                    ],
+                  // Tarjeta de Estado y descripción a la derecha
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStatusSection(),
+                        const SizedBox(height: 20),
+                        _buildDescriptionSection(),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // Tarjeta de Ubicación (ancho completo)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 1, child: _buildLocationSection()),
-                const SizedBox(width: 20),
-                Expanded(flex: 1, child: _buildEvaluacionSection()),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Tarjeta de Ubicación (ancho completo)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 1, child: _buildLocationSection()),
+                  const SizedBox(width: 20),
+                  Expanded(flex: 1, child: _buildEvaluacionSection()),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
