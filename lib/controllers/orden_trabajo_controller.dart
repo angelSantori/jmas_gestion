@@ -78,6 +78,29 @@ class OrdenTrabajoController {
     }
   }
 
+  //GetXId
+  Future<OrdenTrabajo?> getOrdenTrabajoXId(int idOT) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_authService.apiURL}/OrdenTrabajos/$idOT'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData =
+            json.decode(response.body) as Map<String, dynamic>;
+        return OrdenTrabajo.fromMap(jsonData);
+      } else {
+        print(
+          'Error getOrdenTrabajoXId | Ife | Controller: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('Error getOrdenTrabajoXId | Try | Controller: $e');
+      return null;
+    }
+  }
+
   //POST
   //Add
   Future<bool> addOrdenTrabajo(OrdenTrabajo ordenTrabajo) async {
