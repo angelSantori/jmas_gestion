@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
+import 'package:jmas_gestion/controllers/users_controller.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/mensajes.dart';
@@ -22,8 +23,10 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   final PadronController _padronController = PadronController();
   final EvaluacionOrdenTrabajoController _evaluacionOrdenTrabajoController =
       EvaluacionOrdenTrabajoController();
+  final UsersController _usersController = UsersController();
 
   Padron? _padron;
+  Users? _user;
   String? idUser;
   EvaluacionOT? _evaluacionOT;
   bool _isLoadingEvaluacion = false;
@@ -34,7 +37,9 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     if (widget.ordenTrabajo.idPadron != null) {
       _loadPadronInfo();
     }
-    _getUserId();
+    _getUserId().then((_) {
+      _loadUserInfo();
+    });
     _loadEvaluacion();
   }
 
@@ -71,6 +76,30 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       }
     } catch (e) {
       print('Error al cargar información del padrón: $e');
+    }
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      if (idUser == null || idUser == '0') return;
+
+      final usersList = await _usersController.listUsers();
+      final userId = int.tryParse(idUser!);
+
+      if (userId == null) return;
+
+      final foundUser = usersList.firstWhere(
+        (usr) => usr.id_User == userId,
+        orElse: () => Users(),
+      );
+
+      if (foundUser.id_User != null) {
+        setState(() {
+          _user = foundUser;
+        });
+      }
+    } catch (e) {
+      print('Error al cargar información del usuario: $e');
     }
   }
 
@@ -326,7 +355,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               _buildInfoRow('ID', _padron!.idPadron?.toString()),
               _buildInfoRow('Nombre', _padron!.padronNombre),
               _buildInfoRow('Dirección', _padron!.padronDireccion),
-              const SizedBox(height: 10),
+              //const SizedBox(height: 10),
             ],
             // SizedBox(
             //   width: double.infinity,
@@ -433,10 +462,26 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                 'Comentarios',
                 _evaluacionOT?.comentariosEOT ?? 'N/A',
               ),
-              _buildInfoRow(
-                'Revisado por',
-                _evaluacionOT?.idUser.toString() ?? 'N/A',
+              const SizedBox(height: 8),
+              const Text(
+                'Datos del Evaluador:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo,
+                ),
               ),
+              const SizedBox(height: 8),
+
+              if (_user != null) ...[
+                _buildInfoRow(
+                  'Usuario',
+                  '${_user!.id_User} - ${_user!.user_Name}',
+                ),
+                _buildInfoRow('Contacto', _user!.user_Contacto),
+              ] else ...[
+                _buildInfoRow('Usuario', 'No disponible'),
+              ],
             ] else ...[
               _buildInfoRow('Fecha', 'N/A'),
               _buildInfoRow('Comentarios', 'N/A'),
