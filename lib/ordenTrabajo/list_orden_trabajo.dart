@@ -224,6 +224,27 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     });
   }
 
+  Future<void> _updateSingleOrder(int idOrdenTrabajo) async {
+    try {
+      final updatedOrder = await _ordenTrabajoController.getOrdenTrabajoXId(
+        idOrdenTrabajo,
+      );
+      setState(() {
+        final index = _ordenes.indexWhere(
+          (o) => o.idOrdenTrabajo == idOrdenTrabajo,
+        );
+        if (index != -1) {
+          _ordenes[index] = updatedOrder!;
+        }
+        _applyFilters(); // Reaplicar filtros para actualizar _filteredOrdenes
+      });
+    } catch (e) {
+      print('Error al actualizar orden individual: $e');
+      // Si falla, recargar todo como respaldo
+      await _loadOrdenes();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -618,8 +639,10 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                               ),
                                         ),
                                       );
-                                      if (result == true) {
-                                        await _loadOrdenes();
+                                      if (result == true || result != null) {
+                                        await _updateSingleOrder(
+                                          orden.idOrdenTrabajo!,
+                                        );
                                       }
                                     },
                                   ),
