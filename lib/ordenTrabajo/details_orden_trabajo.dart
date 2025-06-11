@@ -36,6 +36,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   EvaluacionOT? _evaluacionOT;
   bool _isLoadingEvaluacion = false;
   List<TrabajoRealizado> _trabajosRealizados = [];
+  List<Users> _allUsers = [];
   bool _isLoadingTrabajos = false;
 
   @override
@@ -49,6 +50,25 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     });
     _loadEvaluacion();
     _loadTrabajosRealizados();
+    _loadAllUsers();
+  }
+
+  Future<void> _loadAllUsers() async {
+    try {
+      final users = await _usersController.listUsers();
+      setState(() => _allUsers = users);
+    } catch (e) {
+      print('Error al cargar todos los usuarios: $e');
+    }
+  }
+
+  // Y luego modificar _getUserInfo para usar la lista precargada:
+  Future<Users?> _getUserInfo(int? userId) async {
+    if (userId == null) return null;
+    return _allUsers.firstWhere(
+      (user) => user.id_User == userId,
+      orElse: () => Users(),
+    );
   }
 
   Future<void> _loadTrabajosRealizados() async {
@@ -724,62 +744,80 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   }
 
   Widget _buildTrabajoRealizadoCard(TrabajoRealizado trabajos) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadiusGeometry.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoRow('Folio', trabajos.folioTR),
-                  _buildInfoRow('Usuario', trabajos.idUserTR?.toString()),
-                  if (trabajos.fechaTR != null)
-                    _buildInfoRow('Fecha', trabajos.fechaTR),
-                  if (trabajos.ubicacionTR != null)
-                    _buildInfoRow('Ubicación', trabajos.ubicacionTR),
-                  if (trabajos.comentarioTR != null)
-                    _buildInfoRow('Comentario', trabajos.comentarioTR),
-                  if (trabajos.idSalida != null)
-                    _buildInfoRow('ID Salida', trabajos.idSalida?.toString()),
-                ],
-              ),
-            ),
+    return FutureBuilder<Users?>(
+      future: _getUserInfo(trabajos.idUserTR),
+      builder: (context, snapshot) {
+        String userInfo = 'N/A';
+        if (snapshot.hasData && snapshot.data != null) {
+          final user = snapshot.data!;
+          userInfo = '${user.id_User} - ${user.user_Name}';
+        } else if (trabajos.idUserTR != null) {
+          userInfo = '${trabajos.idUserTR} - Usuario no encontrado';
+        }
 
-            //Fotos
-            if (trabajos.fotoAntes64TR != null &&
-                trabajos.fotoAntes64TR!.isNotEmpty &&
-                trabajos.fotoDespues64TR != null &&
-                trabajos.fotoDespues64TR!.isNotEmpty)
-              Expanded(
-                flex: 1,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (trabajos.fotoAntes64TR != null)
-                      _buildImageFromBase64(trabajos.fotoAntes64TR, 'Antes'),
-                    const SizedBox(width: 50),
-                    if (trabajos.fotoDespues64TR != null) ...[
-                      const SizedBox(height: 8),
-                      _buildImageFromBase64(
-                        trabajos.fotoDespues64TR,
-                        'Después',
-                      ),
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadiusGeometry.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRow('Folio', trabajos.folioTR),
+                      _buildInfoRow('Usuario', userInfo),
+                      if (trabajos.fechaTR != null)
+                        _buildInfoRow('Fecha', trabajos.fechaTR),
+                      if (trabajos.ubicacionTR != null)
+                        _buildInfoRow('Ubicación', trabajos.ubicacionTR),
+                      if (trabajos.comentarioTR != null)
+                        _buildInfoRow('Comentario', trabajos.comentarioTR),
+                      if (trabajos.idSalida != null)
+                        _buildInfoRow(
+                          'ID Salida',
+                          trabajos.idSalida?.toString(),
+                        ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-          ],
-        ),
-      ),
+                //Fotos
+                if (trabajos.fotoAntes64TR != null &&
+                    trabajos.fotoAntes64TR!.isNotEmpty &&
+                    trabajos.fotoDespues64TR != null &&
+                    trabajos.fotoDespues64TR!.isNotEmpty)
+                  Expanded(
+                    flex: 1,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (trabajos.fotoAntes64TR != null)
+                          _buildImageFromBase64(
+                            trabajos.fotoAntes64TR,
+                            'Antes',
+                          ),
+                        const SizedBox(width: 50),
+                        if (trabajos.fotoDespues64TR != null) ...[
+                          const SizedBox(height: 8),
+                          _buildImageFromBase64(
+                            trabajos.fotoDespues64TR,
+                            'Después',
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
