@@ -1,5 +1,6 @@
+//Librerías
 import 'dart:convert';
-
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_trabajo_controller.dart';
@@ -448,6 +449,45 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     );
   }
 
+  Widget _buildInfoRowCords(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          Expanded(
+            child:
+                label == 'Ubicación' &&
+                        value != null &&
+                        value != 'No disponible'
+                    ? InkWell(
+                      onTap: () => _openGoogleMaps(value),
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    )
+                    : Text(
+                      value ?? 'No disponible',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEvaluacionSection() {
     return Card(
       elevation: 3,
@@ -776,7 +816,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                       if (trabajos.fechaTR != null)
                         _buildInfoRow('Fecha', trabajos.fechaTR),
                       if (trabajos.ubicacionTR != null)
-                        _buildInfoRow('Ubicación', trabajos.ubicacionTR),
+                        _buildInfoRowCords('Ubicación', trabajos.ubicacionTR),
                       if (trabajos.comentarioTR != null)
                         _buildInfoRow('Comentario', trabajos.comentarioTR),
                       if (trabajos.idSalida != null)
@@ -924,5 +964,21 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
             ),
           ),
     );
+  }
+
+  void _openGoogleMaps(String location) {
+    // Extraer coordenadas si están en formato "lat, lng"
+    final coords = location.split(',');
+    if (coords.length == 2) {
+      final lat = coords[0].trim();
+      final lng = coords[1].trim();
+      final url = 'https://www.google.com/maps?q=$lat,$lng';
+      html.window.open(url, '_blank');
+    } else {
+      // Si no son coordenadas, hacer búsqueda por dirección
+      final url =
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}';
+      html.window.open(url, '_blank');
+    }
   }
 }
