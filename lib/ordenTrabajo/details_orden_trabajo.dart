@@ -1,6 +1,5 @@
 //Librerías
 import 'dart:convert';
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_trabajo_controller.dart';
@@ -32,8 +31,9 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       TrabajoRealizadoController();
 
   Padron? _padron;
-  Users? _user;
+
   String? idUser;
+  Users? _evaluador;
   EvaluacionOT? _evaluacionOT;
   bool _isLoadingEvaluacion = false;
   List<TrabajoRealizado> _trabajosRealizados = [];
@@ -43,15 +43,25 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   @override
   void initState() {
     super.initState();
+
+    _loadAllUsers();
     if (widget.ordenTrabajo.idPadron != null) {
       _loadPadronInfo();
     }
-    _getUserId().then((_) {
-      _loadUserInfo();
-    });
+    _getUserId();
     _loadEvaluacion();
     _loadTrabajosRealizados();
-    _loadAllUsers();
+  }
+
+  Future<Users?> _loadEvaluadorInfo(int? userId) async {
+    if (userId == null) return null;
+
+    try {
+      return await _usersController.getUserById(userId);
+    } catch (e) {
+      print('Error al cargar información del evaluador: $e');
+      return null;
+    }
   }
 
   Future<void> _loadAllUsers() async {
@@ -96,7 +106,14 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
         orElse: () => EvaluacionOT(),
       );
       if (evaluacion.idEvaluacionOrdenTrabajo != null) {
-        setState(() => _evaluacionOT = evaluacion);
+        Users? evaluador;
+        if (evaluacion.idUser != null) {
+          evaluador = await _loadEvaluadorInfo(evaluacion.idUser);
+        }
+        setState(() {
+          _evaluacionOT = evaluacion;
+          _evaluador = evaluador; // Guardamos el evaluador en la nueva variable
+        });
       }
     } catch (e) {
       print('Error al cargar evaluación: $e');
@@ -119,30 +136,6 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       }
     } catch (e) {
       print('Error al cargar información del padrón: $e');
-    }
-  }
-
-  Future<void> _loadUserInfo() async {
-    try {
-      if (idUser == null || idUser == '0') return;
-
-      final usersList = await _usersController.listUsers();
-      final userId = int.tryParse(idUser!);
-
-      if (userId == null) return;
-
-      final foundUser = usersList.firstWhere(
-        (usr) => usr.id_User == userId,
-        orElse: () => Users(),
-      );
-
-      if (foundUser.id_User != null) {
-        setState(() {
-          _user = foundUser;
-        });
-      }
-    } catch (e) {
-      print('Error al cargar información del usuario: $e');
     }
   }
 
@@ -403,22 +396,6 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               _buildInfoRow('Dirección', _padron!.padronDireccion),
               //const SizedBox(height: 10),
             ],
-            // SizedBox(
-            //   width: double.infinity,
-            //   child: ElevatedButton.icon(
-            //     icon: const Icon(Icons.map),
-            //     label: const Text('Ver en mapa'),
-            //     onPressed: () {
-            //       // Implementar navegación a mapa
-            //     },
-            //     style: ElevatedButton.styleFrom(
-            //       padding: const EdgeInsets.symmetric(vertical: 12),
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(8),
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -468,7 +445,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                         value != null &&
                         value != 'No disponible'
                     ? InkWell(
-                      onTap: () => _openGoogleMaps(value),
+                      onTap: () => openGoogleMaps(value),
                       child: Text(
                         value,
                         style: const TextStyle(
@@ -534,6 +511,33 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                       ),
                     ),
                   ),
+
+                if (widget.ordenTrabajo.estadoOT == 'Revisión')
+                  PermissionWidget(
+                    permission: 'evaluar',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(35),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            blurRadius: 6,
+                            offset: Offset(3, 5),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo.shade900,
+                        ),
+                        onPressed: () => _showEvaluationDialog(context),
+                        child: Text(
+                          'Revisar',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 10),
@@ -558,14 +562,12 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               ),
               const SizedBox(height: 8),
 
-              if (_user != null) ...[
+              if (_evaluacionOT!.idUser != null) ...[
                 _buildInfoRow(
                   'Usuario',
-                  '${_user!.id_User} - ${_user!.user_Name}',
+                  '${_evaluacionOT!.idUser} - ${_evaluador!.user_Name ?? 'No disponible'}',
                 ),
-                _buildInfoRow('Contacto', _user!.user_Contacto),
-              ] else ...[
-                _buildInfoRow('Usuario', 'No disponible'),
+                _buildInfoRow('Contacto', _evaluador!.user_Contacto!),
               ],
             ] else ...[
               _buildInfoRow('Fecha', 'N/A'),
@@ -873,7 +875,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               : base64String;
 
       return GestureDetector(
-        onTap: () => _showImageDialog(context, base64String, label),
+        onTap: () => showImageDialog(context, base64String, label),
         child: Column(
           children: [
             Text(label),
@@ -902,83 +904,6 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
           const Icon(Icons.error_outline, color: Colors.red),
         ],
       );
-    }
-  }
-
-  void _showImageDialog(
-    BuildContext context,
-    String imageBase64,
-    String title,
-  ) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth:
-                    MediaQuery.of(context).size.width *
-                    1, // 90% del ancho de pantalla
-                maxHeight:
-                    MediaQuery.of(context).size.height *
-                    1, // 80% del alto de pantalla
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: InteractiveViewer(
-                      panEnabled: true,
-                      boundaryMargin: const EdgeInsets.all(20),
-                      minScale: 0.1, // Escala mínima reducida
-                      maxScale: 4.0,
-                      child: Image.memory(
-                        base64Decode(
-                          imageBase64.contains(',')
-                              ? imageBase64.split(',').last
-                              : imageBase64,
-                        ),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cerrar'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  void _openGoogleMaps(String location) {
-    // Extraer coordenadas si están en formato "lat, lng"
-    final coords = location.split(',');
-    if (coords.length == 2) {
-      final lat = coords[0].trim();
-      final lng = coords[1].trim();
-      final url = 'https://www.google.com/maps?q=$lat,$lng';
-      html.window.open(url, '_blank');
-    } else {
-      // Si no son coordenadas, hacer búsqueda por dirección
-      final url =
-          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}';
-      html.window.open(url, '_blank');
     }
   }
 }
