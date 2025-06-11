@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
+import 'package:jmas_gestion/controllers/trabajo_realizado_controller.dart';
 import 'package:jmas_gestion/controllers/users_controller.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
@@ -24,12 +27,16 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   final EvaluacionOrdenTrabajoController _evaluacionOrdenTrabajoController =
       EvaluacionOrdenTrabajoController();
   final UsersController _usersController = UsersController();
+  final TrabajoRealizadoController _trabajoRealizadoController =
+      TrabajoRealizadoController();
 
   Padron? _padron;
   Users? _user;
   String? idUser;
   EvaluacionOT? _evaluacionOT;
   bool _isLoadingEvaluacion = false;
+  List<TrabajoRealizado> _trabajosRealizados = [];
+  bool _isLoadingTrabajos = false;
 
   @override
   void initState() {
@@ -41,6 +48,21 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       _loadUserInfo();
     });
     _loadEvaluacion();
+    _loadTrabajosRealizados();
+  }
+
+  Future<void> _loadTrabajosRealizados() async {
+    setState(() => _isLoadingTrabajos = true);
+    try {
+      final trabajos = await _trabajoRealizadoController.getTRXOtID(
+        widget.ordenTrabajo.idOrdenTrabajo!,
+      );
+      setState(() => _trabajosRealizados = trabajos);
+    } catch (e) {
+      print('Error _loadTrabajosRealizados | DetailsOrdenTRabajo: $e');
+    } finally {
+      setState(() => _isLoadingTrabajos = false);
+    }
   }
 
   Future<void> _loadEvaluacion() async {
@@ -165,6 +187,9 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                   Expanded(flex: 1, child: _buildEvaluacionSection()),
                 ],
               ),
+              const SizedBox(width: 20),
+
+              _buildTrabajosRealizadosSection(),
             ],
           ),
         ),
@@ -579,7 +604,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                 // Actualizar estado de la orden de trabajo
                                 final nuevoEstado =
                                     estadoSeleccionado == 'Aprobar'
-                                        ? 'Aprobada'
+                                        ? 'Aprobada - S/A'
                                         : 'Rechazada';
 
                                 final ordenActualizada = widget.ordenTrabajo
@@ -654,6 +679,212 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildTrabajosRealizadosSection() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadiusGeometry.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              'Trabajos Realizados',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_isLoadingTrabajos)
+              Center(
+                child: CircularProgressIndicator(color: Colors.indigo.shade900),
+              )
+            else if (_trabajosRealizados.isEmpty)
+              const Text(
+                'No hay trabajos realizados registrados',
+                style: TextStyle(fontSize: 16),
+              )
+            else
+              ..._trabajosRealizados
+                  .map(
+                    (listTrabajos) => _buildTrabajoRealizadoCard(listTrabajos),
+                  )
+                  .toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrabajoRealizadoCard(TrabajoRealizado trabajos) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadiusGeometry.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoRow('Folio', trabajos.folioTR),
+                  _buildInfoRow('Usuario', trabajos.idUserTR?.toString()),
+                  if (trabajos.fechaTR != null)
+                    _buildInfoRow('Fecha', trabajos.fechaTR),
+                  if (trabajos.ubicacionTR != null)
+                    _buildInfoRow('Ubicación', trabajos.ubicacionTR),
+                  if (trabajos.comentarioTR != null)
+                    _buildInfoRow('Comentario', trabajos.comentarioTR),
+                  if (trabajos.idSalida != null)
+                    _buildInfoRow('ID Salida', trabajos.idSalida?.toString()),
+                ],
+              ),
+            ),
+
+            //Fotos
+            if (trabajos.fotoAntes64TR != null &&
+                trabajos.fotoAntes64TR!.isNotEmpty &&
+                trabajos.fotoDespues64TR != null &&
+                trabajos.fotoDespues64TR!.isNotEmpty)
+              Expanded(
+                flex: 1,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (trabajos.fotoAntes64TR != null)
+                      _buildImageFromBase64(trabajos.fotoAntes64TR, 'Antes'),
+                    const SizedBox(width: 50),
+                    if (trabajos.fotoDespues64TR != null) ...[
+                      const SizedBox(height: 8),
+                      _buildImageFromBase64(
+                        trabajos.fotoDespues64TR,
+                        'Después',
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageFromBase64(String? base64String, String label) {
+    if (base64String == null || base64String.isEmpty) {
+      return Container();
+    }
+
+    try {
+      final cleanBase64 =
+          base64String.contains(',')
+              ? base64String.split(',').last
+              : base64String;
+
+      return GestureDetector(
+        onTap: () => _showImageDialog(context, base64String, label),
+        child: Column(
+          children: [
+            Text(label),
+            const SizedBox(height: 4),
+            Image.memory(
+              base64Decode(cleanBase64),
+              height: 120, // Reducimos el tamaño para pantallas pequeñas
+              width: 120,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.broken_image,
+                  size: 50,
+                  color: Colors.grey,
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      print('Error al decodificar imagen: $e');
+      return Column(
+        children: [
+          Text(label),
+          const Icon(Icons.error_outline, color: Colors.red),
+        ],
+      );
+    }
+  }
+
+  void _showImageDialog(
+    BuildContext context,
+    String imageBase64,
+    String title,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth:
+                    MediaQuery.of(context).size.width *
+                    1, // 90% del ancho de pantalla
+                maxHeight:
+                    MediaQuery.of(context).size.height *
+                    1, // 80% del alto de pantalla
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InteractiveViewer(
+                      panEnabled: true,
+                      boundaryMargin: const EdgeInsets.all(20),
+                      minScale: 0.1, // Escala mínima reducida
+                      maxScale: 4.0,
+                      child: Image.memory(
+                        base64Decode(
+                          imageBase64.contains(',')
+                              ? imageBase64.split(',').last
+                              : imageBase64,
+                        ),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cerrar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
     );
   }
 }
