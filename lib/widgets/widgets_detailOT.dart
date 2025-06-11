@@ -19,16 +19,18 @@ Color getPrioridadColor(String? prioridad) {
 Color getEstadoColor(String? estado) {
   if (estado == null) return Colors.grey;
   switch (estado.toLowerCase()) {
-    case 'aprobada':
-      return Colors.green;
     case 'pendiente':
       return Colors.orange;
-    case 'asignada':
-      return Colors.blue;
+    case 'aprobada - s/a':
+      return Colors.green;
+    case 'aprobada - a':
+      return Colors.green.shade900;
     case 'revisión':
       return Colors.purple;
     case 'devuelta':
       return Colors.red;
+    case 'cerrada':
+      return Colors.blue.shade900;
     default:
       return Colors.grey;
   }

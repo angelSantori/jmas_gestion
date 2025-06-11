@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
 import 'package:jmas_gestion/ordenTrabajo/details_orden_trabajo.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
+import 'package:jmas_gestion/widgets/widgets_detailOT.dart';
 
 class ListOrdenTrabajo extends StatefulWidget {
   const ListOrdenTrabajo({super.key});
@@ -173,28 +174,28 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     }
   }
 
-  Color _getEstadoColor(String? estado) {
-    if (estado == null) return Colors.grey;
+  // Color _getEstadoColor(String? estado) {
+  //   if (estado == null) return Colors.grey;
 
-    switch (estado.toLowerCase()) {
-      case 'aprobada':
-        return Colors.green;
-      case 'rechazada':
-        return Colors.grey.shade800;
-      case 'pendiente':
-        return Colors.orange;
-      case 'asignada':
-        return Colors.blue;
-      case 'revisión':
-        return Colors.purple;
-      case 'devuelta':
-        return Colors.red;
-      case 'cerrada':
-        return Colors.black;
-      default:
-        return Colors.grey;
-    }
-  }
+  //   switch (estado.toLowerCase()) {
+  //     case 'aprobada':
+  //       return Colors.green;
+  //     case 'rechazada':
+  //       return Colors.grey.shade800;
+  //     case 'pendiente':
+  //       return Colors.orange;
+  //     case 'asignada':
+  //       return Colors.blue;
+  //     case 'revisión':
+  //       return Colors.purple;
+  //     case 'devuelta':
+  //       return Colors.red;
+  //     case 'cerrada':
+  //       return Colors.black;
+  //     default:
+  //       return Colors.grey;
+  //   }
+  // }
 
   Color _getPrioridadColor(String? prioridad) {
     if (prioridad == null) return Colors.grey;
@@ -553,7 +554,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                                   fontSize: 12,
                                                 ),
                                               ),
-                                              backgroundColor: _getEstadoColor(
+                                              backgroundColor: getEstadoColor(
                                                 orden.estadoOT,
                                               ),
                                               padding:
