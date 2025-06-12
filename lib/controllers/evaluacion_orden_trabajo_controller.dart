@@ -1,6 +1,9 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 // Librerías
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import 'package:jmas_gestion/service/auth_service.dart';
 
 class EvaluacionOrdenTrabajoController {
@@ -26,6 +29,31 @@ class EvaluacionOrdenTrabajoController {
       }
     } catch (e) {
       print('Error listEvOT | Try | Controller: $e');
+      return [];
+    }
+  }
+
+  //EvOTxidOT
+  Future<List<EvaluacionOT>> listEvXidOT(int idOT) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_authService.apiURL}/EvaluacionOrdenTrabajoes/ByOT/$idOT'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data
+            .map((listEvOTxidOT) => EvaluacionOT.fromMap(listEvOTxidOT))
+            .toList();
+      } else {
+        print(
+          'Error listEvXidOT | Ife | Controller: ${response.statusCode} - ${response.body}',
+        );
+        return [];
+      }
+    } catch (e) {
+      print('Error listEvXidOT | Try | Controller: $e');
       return [];
     }
   }
@@ -59,12 +87,14 @@ class EvaluacionOT {
   int? idEvaluacionOrdenTrabajo;
   String? fechaEOT;
   String? comentariosEOT;
+  String? estadoEnviadoEOT;
   int? idUser;
   int? idOrdenTrabajo;
   EvaluacionOT({
     this.idEvaluacionOrdenTrabajo,
     this.fechaEOT,
     this.comentariosEOT,
+    this.estadoEnviadoEOT,
     this.idUser,
     this.idOrdenTrabajo,
   });
@@ -73,6 +103,7 @@ class EvaluacionOT {
     int? idEvaluacionOrdenTrabajo,
     String? fechaEOT,
     String? comentariosEOT,
+    String? estadoEnviadoEOT,
     int? idUser,
     int? idOrdenTrabajo,
   }) {
@@ -81,6 +112,7 @@ class EvaluacionOT {
           idEvaluacionOrdenTrabajo ?? this.idEvaluacionOrdenTrabajo,
       fechaEOT: fechaEOT ?? this.fechaEOT,
       comentariosEOT: comentariosEOT ?? this.comentariosEOT,
+      estadoEnviadoEOT: estadoEnviadoEOT ?? this.estadoEnviadoEOT,
       idUser: idUser ?? this.idUser,
       idOrdenTrabajo: idOrdenTrabajo ?? this.idOrdenTrabajo,
     );
@@ -91,6 +123,7 @@ class EvaluacionOT {
       'idEvaluacionOrdenTrabajo': idEvaluacionOrdenTrabajo,
       'fechaEOT': fechaEOT,
       'comentariosEOT': comentariosEOT,
+      'estadoEnviadoEOT': estadoEnviadoEOT,
       'idUser': idUser,
       'idOrdenTrabajo': idOrdenTrabajo,
     };
@@ -107,6 +140,10 @@ class EvaluacionOT {
           map['comentariosEOT'] != null
               ? map['comentariosEOT'] as String
               : null,
+      estadoEnviadoEOT:
+          map['estadoEnviadoEOT'] != null
+              ? map['estadoEnviadoEOT'] as String
+              : null,
       idUser: map['idUser'] != null ? map['idUser'] as int : null,
       idOrdenTrabajo:
           map['idOrdenTrabajo'] != null ? map['idOrdenTrabajo'] as int : null,
@@ -120,7 +157,7 @@ class EvaluacionOT {
 
   @override
   String toString() {
-    return 'EvaluacionOT(idEvaluacionOrdenTrabajo: $idEvaluacionOrdenTrabajo, fechaEOT: $fechaEOT, comentariosEOT: $comentariosEOT, idUser: $idUser, idOrdenTrabajo: $idOrdenTrabajo)';
+    return 'EvaluacionOT(idEvaluacionOrdenTrabajo: $idEvaluacionOrdenTrabajo, fechaEOT: $fechaEOT, comentariosEOT: $comentariosEOT, estadoEnviadoEOT: $estadoEnviadoEOT, idUser: $idUser, idOrdenTrabajo: $idOrdenTrabajo)';
   }
 
   @override
@@ -130,6 +167,7 @@ class EvaluacionOT {
     return other.idEvaluacionOrdenTrabajo == idEvaluacionOrdenTrabajo &&
         other.fechaEOT == fechaEOT &&
         other.comentariosEOT == comentariosEOT &&
+        other.estadoEnviadoEOT == estadoEnviadoEOT &&
         other.idUser == idUser &&
         other.idOrdenTrabajo == idOrdenTrabajo;
   }
@@ -139,6 +177,7 @@ class EvaluacionOT {
     return idEvaluacionOrdenTrabajo.hashCode ^
         fechaEOT.hashCode ^
         comentariosEOT.hashCode ^
+        estadoEnviadoEOT.hashCode ^
         idUser.hashCode ^
         idOrdenTrabajo.hashCode;
   }
