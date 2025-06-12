@@ -33,8 +33,12 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   Padron? _padron;
 
   String? idUser;
+  // ignore: unused_field
   Users? _evaluador;
+  // ignore: unused_field
   EvaluacionOT? _evaluacionOT;
+  List<EvaluacionOT> _evaluaciones = [];
+  int _currentEvaluacionIndex = 0;
   bool _isLoadingEvaluacion = false;
   List<TrabajoRealizado> _trabajosRealizados = [];
   List<Users> _allUsers = [];
@@ -99,20 +103,23 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   Future<void> _loadEvaluacion() async {
     setState(() => _isLoadingEvaluacion = true);
     try {
-      final evaluaciones = await _evaluacionOrdenTrabajoController.listEvOT();
-      final evaluacion = evaluaciones.firstWhere(
-        (element) =>
-            element.idOrdenTrabajo == widget.ordenTrabajo.idOrdenTrabajo,
-        orElse: () => EvaluacionOT(),
+      final evaluaciones = await _evaluacionOrdenTrabajoController.listEvXidOT(
+        widget.ordenTrabajo.idOrdenTrabajo!,
       );
-      if (evaluacion.idEvaluacionOrdenTrabajo != null) {
-        Users? evaluador;
-        if (evaluacion.idUser != null) {
-          evaluador = await _loadEvaluadorInfo(evaluacion.idUser);
-        }
+      if (evaluaciones.isNotEmpty) {
+        // ignore: unused_local_variable
+        final evaluadores = await Future.wait(
+          evaluaciones.map((evs) => _loadEvaluadorInfo(evs.idUser)).toList(),
+        );
+
         setState(() {
-          _evaluacionOT = evaluacion;
-          _evaluador = evaluador; // Guardamos el evaluador en la nueva variable
+          _evaluaciones = evaluaciones;
+          _currentEvaluacionIndex = 0;
+        });
+      } else {
+        setState(() {
+          _evaluaciones = [];
+          _currentEvaluacionIndex = 0;
         });
       }
     } catch (e) {
@@ -120,6 +127,25 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     } finally {
       setState(() => _isLoadingEvaluacion = false);
     }
+  }
+
+  void _nextEvaluacion() {
+    if (_evaluaciones.isEmpty) return;
+    setState(() {
+      _currentEvaluacionIndex =
+          (_currentEvaluacionIndex + 1) % _evaluaciones.length;
+    });
+  }
+
+  void _prevEvaluacion() {
+    if (_evaluaciones.isEmpty) return;
+    setState(() {
+      _currentEvaluacionIndex =
+          (_currentEvaluacionIndex - 1) % _evaluaciones.length;
+      if (_currentEvaluacionIndex < 0) {
+        _currentEvaluacionIndex = _evaluaciones.length - 1;
+      }
+    });
   }
 
   Future<void> _loadPadronInfo() async {
@@ -466,6 +492,18 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   }
 
   Widget _buildEvaluacionSection() {
+    final currentEvaluacion =
+        _evaluaciones.isNotEmpty
+            ? _evaluaciones[_currentEvaluacionIndex]
+            : null;
+    final evaluador =
+        currentEvaluacion?.idUser != null
+            ? _allUsers.firstWhere(
+              (user) => user.id_User == currentEvaluacion?.idUser,
+              orElse: () => Users(),
+            )
+            : null;
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -477,67 +515,97 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Evaluación',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo,
-                  ),
+                Row(
+                  children: [
+                    const Text(
+                      'Evaluación',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.indigo,
+                      ),
+                    ),
+                    if (_evaluaciones.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          '${_currentEvaluacionIndex + 1}/${_evaluaciones.length}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                if (widget.ordenTrabajo.estadoOT == 'Pendiente')
-                  PermissionWidget(
-                    permission: 'evaluar',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(35),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey,
-                            blurRadius: 6,
-                            offset: Offset(3, 5),
+                Row(
+                  children: [
+                    if (_evaluaciones.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios),
+                        onPressed: _prevEvaluacion,
+                        tooltip: 'Evaluación anterior',
+                      ),
+                    if (_evaluaciones.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_forward_ios),
+                        onPressed: _nextEvaluacion,
+                        tooltip: 'Siguiente evaluación',
+                      ),
+                    if (widget.ordenTrabajo.estadoOT == 'Pendiente')
+                      PermissionWidget(
+                        permission: 'evaluar',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(35),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey,
+                                blurRadius: 6,
+                                offset: Offset(3, 5),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo.shade900,
-                        ),
-                        onPressed: () => _showEvaluationDialog(context),
-                        child: Text(
-                          'Evaluar',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                if (widget.ordenTrabajo.estadoOT == 'Revisión')
-                  PermissionWidget(
-                    permission: 'evaluar',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(35),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey,
-                            blurRadius: 6,
-                            offset: Offset(3, 5),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo.shade900,
+                            ),
+                            onPressed: () => _showEvaluationDialog(context),
+                            child: Text(
+                              'Evaluar',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo.shade900,
-                        ),
-                        onPressed: () => _showEvaluationDialog(context),
-                        child: Text(
-                          'Revisar',
-                          style: TextStyle(color: Colors.white),
                         ),
                       ),
-                    ),
-                  ),
+                    if (widget.ordenTrabajo.estadoOT == 'Revisión')
+                      PermissionWidget(
+                        permission: 'evaluar',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(35),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey,
+                                blurRadius: 6,
+                                offset: Offset(3, 5),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo.shade900,
+                            ),
+                            onPressed: () => _showRevisionDialog(context),
+                            child: Text(
+                              'Revisar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -545,11 +613,15 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               Center(
                 child: CircularProgressIndicator(color: Colors.indigo.shade900),
               )
-            else if (_evaluacionOT != null) ...[
-              _buildInfoRow('Fecha', _evaluacionOT?.fechaEOT ?? 'N/A'),
+            else if (currentEvaluacion != null) ...[
+              _buildInfoRow('Fecha', currentEvaluacion.fechaEOT ?? 'N/A'),
               _buildInfoRow(
                 'Comentarios',
-                _evaluacionOT?.comentariosEOT ?? 'N/A',
+                currentEvaluacion.comentariosEOT ?? 'N/A',
+              ),
+              _buildInfoRow(
+                'Estado',
+                currentEvaluacion.estadoEnviadoEOT ?? 'N/A',
               ),
               const SizedBox(height: 8),
               const Text(
@@ -561,13 +633,11 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                 ),
               ),
               const SizedBox(height: 8),
-
-              if (_evaluacionOT!.idUser != null) ...[
+              if (currentEvaluacion.idUser != null) ...[
                 _buildInfoRow(
                   'Usuario',
-                  '${_evaluacionOT!.idUser} - ${_evaluador!.user_Name ?? 'No disponible'}',
+                  '${currentEvaluacion.idUser} - ${evaluador?.user_Name ?? 'No disponible'} (${evaluador?.user_Contacto ?? 'Sin contacto'})',
                 ),
-                _buildInfoRow('Contacto', _evaluador!.user_Contacto!),
               ],
             ] else ...[
               _buildInfoRow('Fecha', 'N/A'),
@@ -679,6 +749,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                     'dd/MM/yyyy HH:mm',
                                   ).format(DateTime.now()),
                                   comentariosEOT: comentarioController.text,
+                                  estadoEnviadoEOT: estadoSeleccionado,
                                   idUser: int.tryParse(idUser!),
                                   idOrdenTrabajo:
                                       widget.ordenTrabajo.idOrdenTrabajo,
@@ -718,6 +789,169 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                               } catch (e) {
                                 Navigator.pop(context);
                                 showError(context, 'Error: ${e.toString()}');
+                              }
+                            }
+                          },
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                          : const Text(
+                            'Guardar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showRevisionDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    String? estadoSeleccionado = 'Cerrar';
+    final TextEditingController comentarioController = TextEditingController();
+    final EvaluacionOrdenTrabajoController evaluacionController =
+        EvaluacionOrdenTrabajoController();
+    final OrdenTrabajoController ordenTrabajoController =
+        OrdenTrabajoController();
+
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Revisar Orden de Trabajo'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSubmitting)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: CircularProgressIndicator(),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomListaDesplegable(
+                              value: estadoSeleccionado,
+                              labelText: 'Estado',
+                              items: ['Cerrar', 'Devolver'],
+                              onChanged: (value) {
+                                estadoSeleccionado = value;
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Seleccione un estado';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextFielTexto(
+                        controller: comentarioController,
+                        labelText: 'Comentarios',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Deje un comentario';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo.shade800,
+                  ),
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isSubmitting = true);
+
+                              try {
+                                // Actualizar estado de la orden de trabajo
+                                final nuevoEstado =
+                                    estadoSeleccionado == 'Cerrar'
+                                        ? 'Cerrada'
+                                        : 'Devuelta';
+
+                                final ordenActualizada = widget.ordenTrabajo
+                                    .copyWith(estadoOT: nuevoEstado);
+
+                                // Crear objeto de evaluación/revisión
+                                final evaluacion = EvaluacionOT(
+                                  idEvaluacionOrdenTrabajo: 0,
+                                  fechaEOT: DateFormat(
+                                    'dd/MM/yyyy HH:mm',
+                                  ).format(DateTime.now()),
+                                  comentariosEOT: comentarioController.text,
+                                  estadoEnviadoEOT: estadoSeleccionado,
+                                  idUser: int.tryParse(idUser!),
+                                  idOrdenTrabajo:
+                                      widget.ordenTrabajo.idOrdenTrabajo,
+                                );
+
+                                // Enviar cambios al servidor
+                                final successEvaluacion =
+                                    await evaluacionController.addEvOT(
+                                      evaluacion,
+                                    );
+
+                                final successOrden =
+                                    await ordenTrabajoController
+                                        .editOrdenTrabajo(ordenActualizada);
+
+                                if (successEvaluacion && successOrden) {
+                                  Navigator.pop(context);
+                                  showOk(context, 'Revisión enviada con éxito');
+
+                                  // Actualizar el estado local
+                                  setState(() {
+                                    widget.ordenTrabajo.estadoOT = nuevoEstado;
+                                  });
+
+                                  await _loadEvaluacion();
+                                  Navigator.pop(context, true);
+                                } else {
+                                  Navigator.pop(context);
+                                  showError(
+                                    context,
+                                    'Error al enviar revisión',
+                                  );
+                                }
+                              } catch (e) {
+                                Navigator.pop(context);
+                                showError(context, 'Error: ${e.toString()}');
+                              } finally {
+                                setState(() => isSubmitting = false);
                               }
                             }
                           },
