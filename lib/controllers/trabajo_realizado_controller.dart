@@ -81,6 +81,54 @@ class TrabajoRealizadoController {
     }
   }
 
+  //NextTRFolio
+  Future<String> getNextTRFolio() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${_authService.apiURL}/TrabajoRealizadoes/next-trabajofolio'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return response.body;
+      } else {
+        print(
+            'Error getNextTRFolio | Ife | Controller: ${response.statusCode} - ${response.body}');
+        return '';
+      }
+    } catch (e) {
+      print('Error getNextTRFolio | Try | Controller: $e');
+      return '';
+    }
+  }
+
+  //Post
+  //Add
+  Future<bool> addTrabajoRealizado(TrabajoRealizado trabajoRealizado) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${_authService.apiURL}/TrabajoRealizadoes'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: trabajoRealizado.toJson(),
+      );
+
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        print(
+          'Error addTrabajoRealizado | Ife | Controller: ${response.statusCode} - ${response.body}',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('Error addTrabajoRealizado | Try | Controller: $e');
+      return false;
+    }
+  }
+
   //PUT
   //edit
   Future<bool> editTrabajoRealizado(TrabajoRealizado trabajoRealizado) async {
