@@ -67,7 +67,15 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
   Future<void> _loadOrdenes() async {
     setState(() => _isLoading = true);
     try {
+      // Obtener las órdenes normalmente
       _ordenes = await _ordenTrabajoController.listOrdenTrabajo();
+
+      // Ordenar las órdenes por ID de mayor a menor
+      _ordenes.sort((a, b) {
+        // Asumiendo que idOrdenTrabajo es un entero
+        return (b.idOrdenTrabajo ?? 0).compareTo(a.idOrdenTrabajo ?? 0);
+      });
+
       _applyFilters();
     } catch (e) {
       print('Error _loadOrdenes: $e');
@@ -173,29 +181,6 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
       });
     }
   }
-
-  // Color _getEstadoColor(String? estado) {
-  //   if (estado == null) return Colors.grey;
-
-  //   switch (estado.toLowerCase()) {
-  //     case 'aprobada':
-  //       return Colors.green;
-  //     case 'rechazada':
-  //       return Colors.grey.shade800;
-  //     case 'pendiente':
-  //       return Colors.orange;
-  //     case 'asignada':
-  //       return Colors.blue;
-  //     case 'revisión':
-  //       return Colors.purple;
-  //     case 'devuelta':
-  //       return Colors.red;
-  //     case 'cerrada':
-  //       return Colors.black;
-  //     default:
-  //       return Colors.grey;
-  //   }
-  // }
 
   Color _getPrioridadColor(String? prioridad) {
     if (prioridad == null) return Colors.grey;
