@@ -31,8 +31,8 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       TrabajoRealizadoController();
 
   Padron? _padron;
-
   String? idUser;
+  Users? _selectedEmpleado;
   // ignore: unused_field
   Users? _evaluador;
   // ignore: unused_field
@@ -43,6 +43,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   List<TrabajoRealizado> _trabajosRealizados = [];
   List<Users> _allUsers = [];
   bool _isLoadingTrabajos = false;
+  String? folioTR;
 
   @override
   void initState() {
@@ -55,6 +56,8 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     _getUserId();
     _loadEvaluacion();
     _loadTrabajosRealizados();
+
+    _loadFolioTR();
   }
 
   Future<Users?> _loadEvaluadorInfo(int? userId) async {
@@ -84,6 +87,30 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       (user) => user.id_User == userId,
       orElse: () => Users(),
     );
+  }
+
+  Future<void> _loadFolioTR() async {
+    final fetchedFolioTR = await _trabajoRealizadoController.getNextTRFolio();
+    setState(() {
+      folioTR = fetchedFolioTR;
+    });
+  }
+
+  Future<bool> _crearTrabajo() async {
+    if (_selectedEmpleado == null) return false;
+    try {
+      final trabajo = TrabajoRealizado(
+        idTrabajoRealizado: 0,
+        folioTR: folioTR,
+        idUserTR: _selectedEmpleado?.id_User,
+        idOrdenTrabajo: widget.ordenTrabajo.idOrdenTrabajo,
+      );
+
+      return await _trabajoRealizadoController.addTrabajoRealizado(trabajo);
+    } catch (e) {
+      print('Error _crearTrabajo | addSalidaPage: $e');
+      return false;
+    }
   }
 
   Future<void> _loadTrabajosRealizados() async {
@@ -660,13 +687,17 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
         OrdenTrabajoController();
 
     bool isSubmitting = false;
+    bool showAsignarUsuario = widget.ordenTrabajo.materialOT != true;
+
+    // Filtrar solo empleados al inicio
+    List<Users> empleados =
+        _allUsers.where((user) => user.user_Rol == "Empleado").toList();
 
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return StatefulBuilder(
-          // Permite actualizar el estado dentro del diálogo
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Evaluar Orden de Trabajo'),
@@ -676,7 +707,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (isSubmitting) // Mostrar indicador de carga si está enviando
+                      if (isSubmitting)
                         const Padding(
                           padding: EdgeInsets.only(bottom: 16),
                           child: CircularProgressIndicator(),
@@ -689,7 +720,12 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                               labelText: 'Estado',
                               items: ['Aprobar', 'Rechazar'],
                               onChanged: (value) {
-                                estadoSeleccionado = value;
+                                setState(() {
+                                  estadoSeleccionado = value;
+                                  showAsignarUsuario =
+                                      widget.ordenTrabajo.materialOT != true &&
+                                      value == 'Aprobar';
+                                });
                               },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -712,6 +748,29 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 16),
+                      // Sección para asignar usuario (solo visible cuando corresponda)
+                      if (showAsignarUsuario) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomListaDesplegableTipo<Users>(
+                                value: _selectedEmpleado,
+                                labelText: 'Seleccionar Empleado',
+                                items: empleados,
+                                onChanged: (Users? newValue) {
+                                  setState(() {
+                                    _selectedEmpleado = newValue;
+                                  });
+                                },
+                                itemLabelBuilder:
+                                    (empleado) =>
+                                        '${empleado.user_Name ?? 'Sin nombre'} - (${empleado.id_User})',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -736,7 +795,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                 // Actualizar estado de la orden de trabajo
                                 final nuevoEstado =
                                     estadoSeleccionado == 'Aprobar'
-                                        ? 'Aprobada - S/A'
+                                        ? 'Aprobada - A'
                                         : 'Rechazada';
 
                                 final ordenActualizada = widget.ordenTrabajo
@@ -765,7 +824,17 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                     await ordenTrabajoController
                                         .editOrdenTrabajo(ordenActualizada);
 
-                                if (successEvaluacion && successOrden) {
+                                // Si se aprobó y no requiere material, crear trabajo realizado
+                                bool successTrabajo = true;
+                                if (estadoSeleccionado == 'Aprobar' &&
+                                    widget.ordenTrabajo.materialOT != true &&
+                                    _selectedEmpleado != null) {
+                                  successTrabajo = await _crearTrabajo();
+                                }
+
+                                if (successEvaluacion &&
+                                    successOrden &&
+                                    successTrabajo) {
                                   Navigator.pop(context);
                                   showOk(
                                     context,
@@ -774,10 +843,9 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                   // Forzar recarga de la página
                                   setState(() {
                                     widget.ordenTrabajo.estadoOT = nuevoEstado;
-                                    widget.ordenTrabajo.descripcionOT =
-                                        widget.ordenTrabajo.descripcionOT;
                                   });
                                   await _loadEvaluacion();
+                                  await _loadTrabajosRealizados();
                                   Navigator.pop(context, true);
                                 } else {
                                   Navigator.pop(context);
