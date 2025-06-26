@@ -4,13 +4,9 @@ import 'package:jmas_gestion/service/auth_service.dart';
 
 class PadronController {
   AuthService _authService = AuthService();
-  static List<Padron>? cachePadron;
 
   //List padron
   Future<List<Padron>> listPadron() async {
-    if (cachePadron != null) {
-      return cachePadron!;
-    }
     try {
       final response = await http.get(
         Uri.parse('${_authService.apiURL}/Padrons'),
@@ -31,6 +27,29 @@ class PadronController {
     } catch (e) {
       print('Error lista Padron | TryCatch | Controller: $e');
       return [];
+    }
+  }
+
+  Future<Padron?> padronXId(int idPadron) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_authService.apiURL}/Padrons/$idPadron'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData =
+            json.decode(response.body) as Map<String, dynamic>;
+        return Padron.fromMap(jsonData);
+      } else {
+        print(
+          'Error padronXId | Ife | Controller: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('Error padronXId | Try | Controller: $e');
+      return null;
     }
   }
 
