@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
+import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/controllers/trabajo_realizado_controller.dart';
 import 'package:jmas_gestion/controllers/users_controller.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
@@ -29,6 +30,10 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   final UsersController _usersController = UsersController();
   final TrabajoRealizadoController _trabajoRealizadoController =
       TrabajoRealizadoController();
+  final TipoProblemaController _tipoProblemaController =
+      TipoProblemaController();
+
+  List<TipoProblema> _allTipoProblemas = [];
 
   Padron? _padron;
   String? idUser;
@@ -53,6 +58,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     if (widget.ordenTrabajo.idPadron != null) {
       _loadPadronInfo();
     }
+    _loadProblemas();
     _getUserId();
     _loadEvaluacion();
     _loadTrabajosRealizados();
@@ -77,6 +83,14 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       setState(() => _allUsers = users);
     } catch (e) {
       print('Error al cargar todos los usuarios: $e');
+    }
+  }
+
+  Future<void> _loadProblemas() async {
+    try {
+      _allTipoProblemas = await _tipoProblemaController.listTipoProblema();
+    } catch (e) {
+      print('Error _loadProblemas | DetailsOrdenTRabajo: $e');
     }
   }
 
@@ -235,11 +249,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                     flex: 1,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStatusSection(),
-                        const SizedBox(height: 20),
-                        _buildDescriptionSection(),
-                      ],
+                      children: [_buildStatusSection()],
                     ),
                   ),
                 ],
@@ -265,6 +275,11 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   }
 
   Widget _buildInfoCard() {
+    // Obtener nombre del tipo de problema
+    final tipoProblema = _allTipoProblemas.firstWhere(
+      (tp) => tp.idTipoProblema == widget.ordenTrabajo.idTipoProblema,
+      orElse: () => TipoProblema(),
+    );
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -289,7 +304,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
             const Divider(),
             _buildInfoRow(
               'Tipo de Problema',
-              widget.ordenTrabajo.tipoProblemaOT,
+              '${tipoProblema.nombreTP ?? 'Sin Nombre'} - (${tipoProblema.idTipoProblema})',
             ),
           ],
         ),
@@ -382,38 +397,6 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     );
   }
 
-  Widget _buildDescriptionSection() {
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Descripción',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                widget.ordenTrabajo.descripcionOT ??
-                    'No hay descripción disponible',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildLocationSection() {
     return Card(
       elevation: 3,
@@ -432,7 +415,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               ),
             ),
             const SizedBox(height: 10),
-            _buildInfoRow('Dirección', widget.ordenTrabajo.direccionOT),
+
             const SizedBox(height: 10),
             if (_padron != null) ...[
               const Text(
