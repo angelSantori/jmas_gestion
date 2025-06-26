@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
+import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/widgets/buscar_padron.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/generales.dart';
@@ -23,23 +24,12 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
 
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _descripcionOTController =
-      TextEditingController();
-  final TextEditingController _direccionOTController = TextEditingController();
   final TextEditingController _idpadronController = TextEditingController();
 
   String? _codFolio;
   final String _showFecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
   bool _isLoading = false;
-
-  String? _selectedTipoProblema;
-  final List<String> _tipoProblemas = [
-    "Problema 1",
-    "Problema 2",
-    "Problema 3",
-    "Problema 4",
-  ];
 
   String? _selectedMedio;
   final List<String> _medios = [
@@ -60,16 +50,31 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
 
   Padron? _selectedPadron;
 
+  //  Tipo de problema
+  final TipoProblemaController _tipoProblemaController =
+      TipoProblemaController();
+  List<TipoProblema> _allProblemas = [];
+  TipoProblema? _selectedTipoProblema;
+
   @override
   void initState() {
     super.initState();
     _loadFolioOT();
+    _loadTipoProblemas();
   }
 
   Future<void> _loadFolioOT() async {
     final fetchFolioOT = await _ordenTrabajoController.getNextOTFolio();
     setState(() {
       _codFolio = fetchFolioOT;
+    });
+  }
+
+  Future<void> _loadTipoProblemas() async {
+    List<TipoProblema> problemas =
+        await _tipoProblemaController.listTipoProblema();
+    setState(() {
+      _allProblemas = problemas;
     });
   }
 
@@ -115,8 +120,6 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
   void _limpiarFormulario() {
     _formKey.currentState?.reset();
     setState(() {
-      _descripcionOTController.clear();
-      _direccionOTController.clear();
       _idpadronController.clear();
       _selectedMedio = null;
       _selectedPrioridad = null;
@@ -131,16 +134,14 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
     return OrdenTrabajo(
       idOrdenTrabajo: 0,
       folioOT: _codFolio,
-      descripcionOT: _descripcionOTController.text,
-      fechaOT: DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+      fechaOT: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
       medioOT: _selectedMedio,
       materialOT: _requiereMaterial,
-      direccionOT: _direccionOTController.text,
-      tipoProblemaOT: _selectedTipoProblema,
       estadoOT: 'Pendiente',
       prioridadOT: _selectedPrioridad,
       idUser: int.tryParse(widget.idUser!),
       idPadron: _selectedPadron?.idPadron,
+      idTipoProblema: _selectedTipoProblema!.idTipoProblema,
     );
   }
 
@@ -200,41 +201,9 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
                                     text: 'Información del Problema',
                                   ),
                                   const SizedBox(height: 20),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: CustomTextFielTexto(
-                                          controller: _descripcionOTController,
-                                          labelText: 'Descripción del problema',
-                                          validator: (desc) {
-                                            if (desc == null || desc.isEmpty) {
-                                              return 'Descripción obligatoria';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 30),
 
                                   Row(
                                     children: [
-                                      Expanded(
-                                        child: CustomTextFielTexto(
-                                          controller: _direccionOTController,
-                                          labelText: 'Dirección',
-                                          validator: (direc) {
-                                            if (direc == null ||
-                                                direc.isEmpty) {
-                                              return 'Dirección obligatoria';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 20),
-
                                       Expanded(
                                         child: CustomListaDesplegable(
                                           value: _selectedMedio,
@@ -261,22 +230,26 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: CustomListaDesplegable(
+                                        child: CustomListaDesplegableTipo<
+                                          TipoProblema
+                                        >(
                                           value: _selectedTipoProblema,
                                           labelText: 'Tipo de Problema',
-                                          items: _tipoProblemas,
-                                          onChanged: (tProblema) {
+                                          items: _allProblemas,
+                                          onChanged: (problema) {
                                             setState(() {
-                                              _selectedTipoProblema = tProblema;
+                                              _selectedTipoProblema = problema;
                                             });
                                           },
-                                          validator: (tProblema) {
-                                            if (tProblema == null ||
-                                                tProblema.isEmpty) {
-                                              return 'Tipo de problema obligatorio';
+                                          validator: (problema) {
+                                            if (problema == null) {
+                                              return 'Debe seleccionar un tipo de problema';
                                             }
                                             return null;
                                           },
+                                          itemLabelBuilder:
+                                              (problema) =>
+                                                  '${problema.nombreTP ?? 'Sin nombre'} - (${problema.idTipoProblema})',
                                         ),
                                       ),
                                       const SizedBox(width: 20),
