@@ -44,12 +44,22 @@ Color getEstadoColor(String? estado) {
 // Format Date
 String formatDate(String? dateString) {
   if (dateString == null) return 'No disponible';
-  try {
-    final date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
-    return DateFormat('dd/MM/yyyy - HH:mm').format(date);
-  } catch (e) {
-    return dateString;
+
+  final formats = [
+    DateFormat('dd/MM/yyyy HH:mm:ss'),
+    DateFormat('dd/MM/yyyy HH:mm'),
+  ];
+
+  for (final format in formats) {
+    try {
+      final date = format.parse(dateString);
+      return DateFormat('dd/MM/yyyy - HH:mm').format(date);
+    } catch (e) {
+      continue;
+    }
   }
+
+  return dateString; // Si ningún formato funcionó
 }
 
 // Maps
