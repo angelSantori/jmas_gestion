@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
+import 'package:jmas_gestion/controllers/padron_controller.dart';
+import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/ordenTrabajo/details_orden_trabajo.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
+import 'package:jmas_gestion/widgets/mensajes.dart';
 import 'package:jmas_gestion/widgets/widgets_detailOT.dart';
 
 class ListOrdenTrabajo extends StatefulWidget {
@@ -15,6 +18,9 @@ class ListOrdenTrabajo extends StatefulWidget {
 class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
   final OrdenTrabajoController _ordenTrabajoController =
       OrdenTrabajoController();
+  final TipoProblemaController _tipoProblemaController =
+      TipoProblemaController();
+  final PadronController _padronController = PadronController();
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -22,53 +28,56 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
   List<OrdenTrabajo> _filteredOrdenes = [];
   bool _isLoading = true;
 
+  //  Tipo Problema
+  List<TipoProblema> _allTipoProblemas = [];
+  String? _selectedTipoProblema;
+
+  //  Padron
+  final TextEditingController _padronIdController = TextEditingController();
+  Padron? _selectedPadron;
+  List<Padron> _allPadrones = [];
+
   // Filtros
   String _searchFolio = '';
   String? _selectedEstado;
   String? _selectedMedio;
-  String? _selectedTipoProblema;
   String? _selectedPrioridad;
   DateTimeRange? _fechaRange;
 
   final List<String> _estados = [
-    'Todos',
     'Pendiente',
-    'Asignada',
+    'Aprobada - S/A',
+    'Aprobada - A',
     'Revisión',
     'Devuelta',
-    'Aprobada',
+    'Cerrada',
   ];
 
-  final List<String> _medios = ["Todos", "Wasa", "Fon", "Ventanilla", "Otro"];
+  final List<String> _medios = ["Wasa", "Fon", "Ventanilla", "Otro"];
 
-  final List<String> _tipoProblemas = [
-    "Todos",
-    "Problema 1",
-    "Problema 2",
-    "Problema 3",
-    "Problema 4",
-  ];
-
-  final List<String> _prioridades = ["Todos", "Baja", "Media", "Alta"];
+  final List<String> _prioridades = ["Baja", "Media", "Alta"];
 
   @override
   void initState() {
     super.initState();
-    _loadOrdenes();
+    _loadData();
     _searchController.addListener(_applyFilters);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _padronIdController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadOrdenes() async {
+  Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
       // Obtener las órdenes normalmente
       _ordenes = await _ordenTrabajoController.listOrdenTrabajo();
+      _allTipoProblemas = await _tipoProblemaController.listTipoProblema();
+      _allPadrones = await _padronController.listPadron();
 
       // Ordenar las órdenes por ID de mayor a menor
       _ordenes.sort((a, b) {
@@ -81,6 +90,24 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
       print('Error _loadOrdenes: $e');
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _searchPadronById() async {
+    final id = _padronIdController.text.trim();
+    if (id.isEmpty) {
+      setState(() => _selectedPadron = null);
+      _applyFilters();
+      return;
+    }
+    try {
+      final padron = await _padronController.padronXId(int.parse(id));
+      setState(() => _selectedPadron = padron);
+      _applyFilters();
+    } catch (e) {
+      setState(() => _selectedPadron = null);
+      showAdvertence(context, 'No se encontró padrón con ID: $id');
+      _applyFilters();
     }
   }
 
@@ -102,6 +129,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
               return false;
             }
 
+            // Filtro por prioridad
             if (_selectedPrioridad != null &&
                 _selectedPrioridad != 'Todos' &&
                 orden.prioridadOT != _selectedPrioridad) {
@@ -115,10 +143,15 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
               return false;
             }
 
-            // Filtro por tipo de problema
+            //  Filtro por tipo de problema
             if (_selectedTipoProblema != null &&
-                _selectedTipoProblema != 'Todos' &&
-                orden.tipoProblemaOT != _selectedTipoProblema) {
+                orden.idTipoProblema.toString() != _selectedTipoProblema) {
+              return false;
+            }
+
+            //  Filtro por padron
+            if (_selectedPadron != null &&
+                orden.idPadron != _selectedPadron?.idPadron) {
               return false;
             }
 
@@ -182,22 +215,6 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     }
   }
 
-  Color _getPrioridadColor(String? prioridad) {
-    if (prioridad == null) return Colors.grey;
-    switch (prioridad.toLowerCase()) {
-      case 'baja':
-        return Colors.blue;
-      case 'media':
-        return Colors.orange;
-      case 'alta':
-        return Colors.red;
-      case 'cerrada':
-        return Colors.black;
-      default:
-        return Colors.grey;
-    }
-  }
-
   void _clearAllFilters() {
     setState(() {
       _searchFolio = '';
@@ -206,6 +223,8 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
       _selectedMedio = null;
       _selectedTipoProblema = null;
       _fechaRange = null;
+      _padronIdController.clear();
+      _selectedPadron = null;
       _applyFilters();
     });
   }
@@ -227,7 +246,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     } catch (e) {
       print('Error al actualizar orden individual: $e');
       // Si falla, recargar todo como respaldo
-      await _loadOrdenes();
+      await _loadData();
     }
   }
 
@@ -240,12 +259,13 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadOrdenes),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
           if (_searchFolio.isNotEmpty ||
               _selectedEstado != null ||
               _selectedPrioridad != null ||
               _selectedMedio != null ||
               _selectedTipoProblema != null ||
+              _selectedPadron != null ||
               _fechaRange != null)
             IconButton(
               icon: const Icon(Icons.filter_alt_off),
@@ -277,6 +297,28 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                           controller: _searchController,
                           labelText: 'Buscar por folio',
                           prefixIcon: Icons.search,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+
+                      //  Padron
+                      Expanded(
+                        child: CustomTextFieldNumero(
+                          controller: _padronIdController,
+                          labelText: 'Buscar padrón por ID',
+                          prefixIcon: Icons.search,
+                          onFieldSubmitted: (value) => _searchPadronById(),
+                          trailingIcon:
+                              _selectedPadron != null
+                                  ? IconButton(
+                                    icon: Icon(Icons.clear, size: 18),
+                                    onPressed: () {
+                                      _padronIdController.clear();
+                                      _selectedPadron = null;
+                                      _applyFilters();
+                                    },
+                                  )
+                                  : null,
                         ),
                       ),
                       const SizedBox(width: 20),
@@ -401,17 +443,30 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                         ),
                       ),
                       const SizedBox(width: 20),
+
+                      //  Tipo de Problema
                       Expanded(
-                        child: CustomListaDesplegable(
-                          value: _selectedTipoProblema,
+                        child: CustomListaDesplegableTipo<TipoProblema>(
+                          value:
+                              _selectedTipoProblema != null
+                                  ? _allTipoProblemas.firstWhere(
+                                    (tp) =>
+                                        tp.idTipoProblema.toString() ==
+                                        _selectedTipoProblema,
+                                  )
+                                  : null,
                           labelText: 'Tipo Problema',
-                          items: _tipoProblemas,
-                          onChanged: (value) {
+                          items: _allTipoProblemas,
+                          onChanged: (TipoProblema? newProblema) {
                             setState(() {
-                              _selectedTipoProblema = value;
+                              _selectedTipoProblema =
+                                  newProblema?.idTipoProblema.toString();
                               _applyFilters();
                             });
                           },
+                          itemLabelBuilder:
+                              (tp) =>
+                                  '${tp.nombreTP ?? 'N/A'} - ${tp.idTipoProblema}',
                           trailingIcon:
                               _selectedTipoProblema != null
                                   ? IconButton(
@@ -454,6 +509,18 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                             (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final orden = _filteredOrdenes[index];
+
+                          // Obtener nombre del tipo de problema
+                          final tipoProblema = _allTipoProblemas.firstWhere(
+                            (tp) => tp.idTipoProblema == orden.idTipoProblema,
+                            orElse: () => TipoProblema(),
+                          );
+
+                          // Obtener datos del padrón
+                          final padron = _allPadrones.firstWhere(
+                            (p) => p.idPadron == orden.idPadron,
+                            orElse: () => Padron(),
+                          );
 
                           return Container(
                             decoration: BoxDecoration(
@@ -507,9 +574,10 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                           ),
                                         ),
                                         const SizedBox(height: 8),
-                                        // Estado
+                                        // Estado & Prioridad
                                         Row(
                                           children: [
+                                            //  Prioridad
                                             Chip(
                                               label: Text(
                                                 orden.prioridadOT ??
@@ -520,7 +588,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                                 ),
                                               ),
                                               backgroundColor:
-                                                  _getPrioridadColor(
+                                                  getPrioridadColor(
                                                     orden.prioridadOT,
                                                   ),
                                               padding:
@@ -530,6 +598,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                                   ),
                                             ),
                                             const SizedBox(width: 20),
+                                            //  Estado
                                             Chip(
                                               label: Text(
                                                 orden.estadoOT ??
@@ -562,40 +631,39 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                         ),
                                         const SizedBox(height: 8),
                                         // Medio y Problema
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                'Medio: ${orden.medioOT ?? 'No disponible'}',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Text(
-                                                'Problema: ${orden.tipoProblemaOT ?? 'No disponible'}',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                        Text(
+                                          'Medio: ${orden.medioOT ?? 'No disponible'}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade600,
+                                          ),
                                         ),
                                         const SizedBox(height: 8),
-
                                         Text(
-                                          'Dirección: ${orden.direccionOT}',
+                                          'Problema: ${tipoProblema.nombreTP ?? 'No disponible'}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        // Información del padrón
+                                        Text(
+                                          'Padrón: ${padron.padronNombre ?? 'N/A'} (${padron.idPadron ?? ''})',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Dirección: ${padron.padronDireccion ?? 'No disponible'}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.grey.shade600,
-                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ],
