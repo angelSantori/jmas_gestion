@@ -374,15 +374,17 @@ class CustomTextFieldNumero extends StatefulWidget {
   final String? Function(String?)? validator;
   final IconData prefixIcon;
   final void Function(String)? onFieldSubmitted;
+  final Widget? trailingIcon;
 
   const CustomTextFieldNumero({
-    Key? key,
+    super.key,
     required this.controller,
     required this.labelText,
     required this.prefixIcon,
     this.validator,
     this.onFieldSubmitted,
-  }) : super(key: key);
+    this.trailingIcon,
+  });
 
   @override
   State<CustomTextFieldNumero> createState() => _CustomTextFieldNumeroState();
@@ -470,6 +472,7 @@ class _CustomTextFieldNumeroState extends State<CustomTextFieldNumero>
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.red, width: 2.0),
               ),
+              suffixIcon: widget.trailingIcon,
             ),
             style: const TextStyle(fontSize: 18, color: Colors.black),
             validator: widget.validator,
@@ -495,7 +498,7 @@ class CustomListaDesplegable extends StatefulWidget {
   final Widget? trailingIcon;
 
   const CustomListaDesplegable({
-    Key? key,
+    super.key,
     required this.value,
     required this.labelText,
     required this.items,
@@ -503,7 +506,7 @@ class CustomListaDesplegable extends StatefulWidget {
     this.validator,
     this.icon = Icons.arrow_drop_down,
     this.trailingIcon,
-  }) : super(key: key);
+  });
 
   @override
   State<CustomListaDesplegable> createState() => _CustomListaDesplegableState();
@@ -737,6 +740,7 @@ class CustomListaDesplegableTipo<T> extends StatefulWidget {
   final String? Function(T?)? validator;
   final IconData icon;
   final String Function(T) itemLabelBuilder;
+  final Widget? trailingIcon;
 
   const CustomListaDesplegableTipo({
     super.key,
@@ -747,6 +751,7 @@ class CustomListaDesplegableTipo<T> extends StatefulWidget {
     this.validator,
     this.icon = Icons.arrow_drop_down,
     required this.itemLabelBuilder,
+    this.trailingIcon,
   });
 
   @override
@@ -847,6 +852,7 @@ class _CustomListaDesplegableTipoState<T>
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: Colors.red, width: 2.0),
                 ),
+                suffixIcon: widget.trailingIcon,
               ),
               items:
                   widget.items.map((item) {
