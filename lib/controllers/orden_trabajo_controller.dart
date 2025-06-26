@@ -155,58 +155,50 @@ class OrdenTrabajoController {
 class OrdenTrabajo {
   int? idOrdenTrabajo;
   String? folioOT;
-  String? descripcionOT;
   String? fechaOT;
   String? medioOT;
   bool? materialOT;
-  String? direccionOT;
-  String? tipoProblemaOT;
   String? estadoOT;
   String? prioridadOT;
   int? idUser;
   int? idPadron;
+  int? idTipoProblema;
   OrdenTrabajo({
     this.idOrdenTrabajo,
     this.folioOT,
-    this.descripcionOT,
     this.fechaOT,
     this.medioOT,
     this.materialOT,
-    this.direccionOT,
-    this.tipoProblemaOT,
     this.estadoOT,
     this.prioridadOT,
     this.idUser,
     this.idPadron,
+    this.idTipoProblema,
   });
 
   OrdenTrabajo copyWith({
     int? idOrdenTrabajo,
     String? folioOT,
-    String? descripcionOT,
     String? fechaOT,
     String? medioOT,
     bool? materialOT,
-    String? direccionOT,
-    String? tipoProblemaOT,
     String? estadoOT,
     String? prioridadOT,
     int? idUser,
     int? idPadron,
+    int? idTipoProblema,
   }) {
     return OrdenTrabajo(
       idOrdenTrabajo: idOrdenTrabajo ?? this.idOrdenTrabajo,
       folioOT: folioOT ?? this.folioOT,
-      descripcionOT: descripcionOT ?? this.descripcionOT,
       fechaOT: fechaOT ?? this.fechaOT,
       medioOT: medioOT ?? this.medioOT,
       materialOT: materialOT ?? this.materialOT,
-      direccionOT: direccionOT ?? this.direccionOT,
-      tipoProblemaOT: tipoProblemaOT ?? this.tipoProblemaOT,
       estadoOT: estadoOT ?? this.estadoOT,
       prioridadOT: prioridadOT ?? this.prioridadOT,
       idUser: idUser ?? this.idUser,
       idPadron: idPadron ?? this.idPadron,
+      idTipoProblema: idTipoProblema ?? this.idTipoProblema,
     );
   }
 
@@ -214,16 +206,14 @@ class OrdenTrabajo {
     return <String, dynamic>{
       'idOrdenTrabajo': idOrdenTrabajo,
       'folioOT': folioOT,
-      'descripcionOT': descripcionOT,
       'fechaOT': fechaOT,
       'medioOT': medioOT,
       'materialOT': materialOT,
-      'direccionOT': direccionOT,
-      'tipoProblemaOT': tipoProblemaOT,
       'estadoOT': estadoOT,
       'prioridadOT': prioridadOT,
       'idUser': idUser,
       'idPadron': idPadron,
+      'idTipoProblema': idTipoProblema,
     };
   }
 
@@ -232,22 +222,16 @@ class OrdenTrabajo {
       idOrdenTrabajo:
           map['idOrdenTrabajo'] != null ? map['idOrdenTrabajo'] as int : null,
       folioOT: map['folioOT'] != null ? map['folioOT'] as String : null,
-      descripcionOT:
-          map['descripcionOT'] != null ? map['descripcionOT'] as String : null,
       fechaOT: map['fechaOT'] != null ? map['fechaOT'] as String : null,
       medioOT: map['medioOT'] != null ? map['medioOT'] as String : null,
       materialOT: map['materialOT'] != null ? map['materialOT'] as bool : null,
-      direccionOT:
-          map['direccionOT'] != null ? map['direccionOT'] as String : null,
-      tipoProblemaOT:
-          map['tipoProblemaOT'] != null
-              ? map['tipoProblemaOT'] as String
-              : null,
       estadoOT: map['estadoOT'] != null ? map['estadoOT'] as String : null,
       prioridadOT:
           map['prioridadOT'] != null ? map['prioridadOT'] as String : null,
       idUser: map['idUser'] != null ? map['idUser'] as int : null,
       idPadron: map['idPadron'] != null ? map['idPadron'] as int : null,
+      idTipoProblema:
+          map['idTipoProblema'] != null ? map['idTipoProblema'] as int : null,
     );
   }
 
@@ -258,7 +242,7 @@ class OrdenTrabajo {
 
   @override
   String toString() {
-    return 'OrdenTrabajo(idOrdenTrabajo: $idOrdenTrabajo, folioOT: $folioOT, descripcionOT: $descripcionOT, fechaOT: $fechaOT, medioOT: $medioOT, materialOT: $materialOT, direccionOT: $direccionOT, tipoProblemaOT: $tipoProblemaOT, estadoOT: $estadoOT, prioridadOT: $prioridadOT, idUser: $idUser, idPadron: $idPadron)';
+    return 'OrdenTrabajo(idOrdenTrabajo: $idOrdenTrabajo, folioOT: $folioOT, fechaOT: $fechaOT, medioOT: $medioOT, materialOT: $materialOT, estadoOT: $estadoOT, prioridadOT: $prioridadOT, idUser: $idUser, idPadron: $idPadron, idTipoProblema: $idTipoProblema)';
   }
 
   @override
@@ -267,31 +251,27 @@ class OrdenTrabajo {
 
     return other.idOrdenTrabajo == idOrdenTrabajo &&
         other.folioOT == folioOT &&
-        other.descripcionOT == descripcionOT &&
         other.fechaOT == fechaOT &&
         other.medioOT == medioOT &&
         other.materialOT == materialOT &&
-        other.direccionOT == direccionOT &&
-        other.tipoProblemaOT == tipoProblemaOT &&
         other.estadoOT == estadoOT &&
         other.prioridadOT == prioridadOT &&
         other.idUser == idUser &&
-        other.idPadron == idPadron;
+        other.idPadron == idPadron &&
+        other.idTipoProblema == idTipoProblema;
   }
 
   @override
   int get hashCode {
     return idOrdenTrabajo.hashCode ^
         folioOT.hashCode ^
-        descripcionOT.hashCode ^
         fechaOT.hashCode ^
         medioOT.hashCode ^
         materialOT.hashCode ^
-        direccionOT.hashCode ^
-        tipoProblemaOT.hashCode ^
         estadoOT.hashCode ^
         prioridadOT.hashCode ^
         idUser.hashCode ^
-        idPadron.hashCode;
+        idPadron.hashCode ^
+        idTipoProblema.hashCode;
   }
 }
