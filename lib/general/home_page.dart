@@ -42,6 +42,7 @@ import 'package:jmas_gestion/ordenTrabajo/list_orden_trabajo.dart';
 // import 'package:jmas_desktop/widgets/componentes.dart';
 // import 'package:jmas_desktop/widgets/permission_widget.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
+import 'package:jmas_gestion/tipoProblemas/list_tipo_problema.dart';
 import 'package:jmas_gestion/widgets/componentes.dart';
 
 class HomePage extends StatefulWidget {
@@ -109,6 +110,9 @@ class _HomePageState extends State<HomePage>
       'addOrdenTrabajo':
           () => AddOrdenTrabajo(idUser: idUser, userName: userName),
       'listOrdenTrabajo': () => const ListOrdenTrabajo(),
+
+      //  Problemas
+      'listTipoProblema': () => const ListTipoProblema(),
       //Productos
       // 'addProducto': () => const AddProductoPage(),
       // 'listProducto': () => const ListProductoPage(),
@@ -309,6 +313,14 @@ class _HomePageState extends State<HomePage>
                               color: Colors.white,
                             ),
                             onTap: () => _navigateTo('listOrdenTrabajo'),
+                          ),
+                          CustomListTile(
+                            title: 'Tipo de Problemas',
+                            icon: Icon(
+                              Icons.tour_outlined,
+                              color: Colors.white,
+                            ),
+                            onTap: () => _navigateTo('listTipoProblema'),
                           ),
 
                           // CustomExpansionTile(
