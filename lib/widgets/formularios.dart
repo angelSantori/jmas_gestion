@@ -1015,3 +1015,32 @@ class CustomAutocomplete<T extends Object> extends StatelessWidget {
     );
   }
 }
+
+class CustomElevatedButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onPressed;
+  final bool isEnabled;
+  final Color backgroundColor;
+  final Color textColor;
+
+  const CustomElevatedButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.isEnabled = true,
+    this.backgroundColor = Colors.blue,
+    this.textColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isEnabled ? backgroundColor : Colors.grey.shade600,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      onPressed: isEnabled ? onPressed : null,
+      child: Text(text, style: TextStyle(color: textColor)),
+    );
+  }
+}

@@ -147,6 +147,16 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Agregar Orden de Servicio',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 2,
+        backgroundColor: Colors.indigo.shade900,
+        foregroundColor: Colors.white,
+      ),
       body: Stack(
         children: [
           Center(

@@ -66,27 +66,35 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
   }
 
   Future<void> _showAddDialog() async {
+    final formKey = GlobalKey<FormState>();
     final nombreController = TextEditingController();
+
     final result = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Agregar Tipo de Problema'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomTextFielTexto(
-                  controller: nombreController,
-                  labelText: 'Nombre del problema',
-                  validator: (problema) {
-                    if (problema == null || problema.isEmpty) {
-                      return 'Nombre del problema obligatorio';
-                    }
-                    return null;
-                  },
-                  prefixIcon: Icons.text_fields_rounded,
-                ),
-              ],
+            title: const Text(
+              'Agregar Tipo de Problema',
+              textAlign: TextAlign.center,
+            ),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomTextFielTexto(
+                    controller: nombreController,
+                    labelText: 'Nombre del problema',
+                    validator: (problema) {
+                      if (problema == null || problema.isEmpty) {
+                        return 'Nombre del problema obligatorio';
+                      }
+                      return null;
+                    },
+                    prefixIcon: Icons.text_fields_rounded,
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -95,11 +103,18 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  if (nombreController.text.isNotEmpty) {
+                  if (formKey.currentState!.validate()) {
                     Navigator.pop(context, true);
                   }
                 },
-                child: const Text('Guardar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo.shade900,
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'Guardar',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -123,40 +138,57 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
   }
 
   Future<void> _showEditDialog(TipoProblema problema) async {
+    final formKey = GlobalKey<FormState>();
     final nombreController = TextEditingController(text: problema.nombreTP);
     final result = await showCupertinoDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Editar Tipo de Problema'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomTextFielTexto(
-                  controller: nombreController,
-                  labelText: 'Nombre del problema',
-                  validator: (problema) {
-                    if (problema == null || problema.isEmpty) {
-                      return 'Nombre del tipo de problema obligatorio';
-                    }
-                    return null;
-                  },
-                  prefixIcon: Icons.text_fields_rounded,
-                ),
-              ],
+            title: const Text(
+              'Editar Tipo de Problema',
+              textAlign: TextAlign.center,
+            ),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomTextFielTexto(
+                    controller: nombreController,
+                    labelText: 'Nombre del problema',
+                    validator: (problema) {
+                      if (problema == null || problema.isEmpty) {
+                        return 'Nombre del tipo de problema obligatorio';
+                      }
+                      return null;
+                    },
+                    prefixIcon: Icons.text_fields_rounded,
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo.shade900,
+                  elevation: 2,
+                ),
                 onPressed: () {
-                  if (nombreController.text.isNotEmpty) {
+                  if (formKey.currentState!.validate()) {
                     Navigator.pop(context, true);
                   }
                 },
-                child: const Text('Guardar'),
+                child: const Text(
+                  'Guardar',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -184,8 +216,14 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lista Tipo de Problemas'),
+        title: const Text(
+          'Lista Tipo de Problemas',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
+        elevation: 2,
+        backgroundColor: Colors.indigo.shade900,
+        foregroundColor: Colors.white,
       ),
       floatingActionButton: PermissionWidget(
         permission: 'add',
