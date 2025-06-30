@@ -8,16 +8,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   //Ventana
-  doWhenWindowReady(
-    () {
-      const initialSize = Size(1300, 800);
-      //const initialSize2 = Size(width, height);
-      appWindow.minSize = initialSize;
-      appWindow.size = initialSize;
-      appWindow.alignment = Alignment.center;
-      appWindow.show();
-    },
-  );
+  doWhenWindowReady(() {
+    const initialSize = Size(1300, 800);
+    //const initialSize2 = Size(width, height);
+    appWindow.minSize = initialSize;
+    appWindow.size = initialSize;
+    appWindow.alignment = Alignment.center;
+    appWindow.show();
+  });
 
   //Verificar autenticación antes de iniciar la app
   final authService = AuthService();
@@ -28,16 +26,13 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
-  const MyApp({
-    super.key,
-    required this.isLoggedIn,
-  });
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'App Almacén JMAS',
+      title: 'App Orden Servicios JMAS',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
