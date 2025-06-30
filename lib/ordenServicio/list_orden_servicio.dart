@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
+import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
-import 'package:jmas_gestion/ordenTrabajo/details_orden_trabajo.dart';
+import 'package:jmas_gestion/ordenServicio/details_orden_servicio.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/mensajes.dart';
 import 'package:jmas_gestion/widgets/widgets_detailOT.dart';
 
-class ListOrdenTrabajo extends StatefulWidget {
-  const ListOrdenTrabajo({super.key});
+class ListOrdenServicio extends StatefulWidget {
+  const ListOrdenServicio({super.key});
 
   @override
-  State<ListOrdenTrabajo> createState() => _ListOrdenTrabajoState();
+  State<ListOrdenServicio> createState() => _ListOrdenServicioState();
 }
 
-class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
-  final OrdenTrabajoController _ordenTrabajoController =
-      OrdenTrabajoController();
+class _ListOrdenServicioState extends State<ListOrdenServicio> {
+  final OrdenServicioController _ordenServicioController =
+      OrdenServicioController();
   final TipoProblemaController _tipoProblemaController =
       TipoProblemaController();
   final PadronController _padronController = PadronController();
 
   final TextEditingController _searchController = TextEditingController();
 
-  List<OrdenTrabajo> _ordenes = [];
-  List<OrdenTrabajo> _filteredOrdenes = [];
+  List<OrdenServicio> _ordenServicios = [];
+  List<OrdenServicio> _filteredOrdenesServicios = [];
   bool _isLoading = true;
 
   //  Tipo Problema
@@ -75,14 +75,14 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     setState(() => _isLoading = true);
     try {
       // Obtener las órdenes normalmente
-      _ordenes = await _ordenTrabajoController.listOrdenTrabajo();
+      _ordenServicios = await _ordenServicioController.listOrdenServicio();
       _allTipoProblemas = await _tipoProblemaController.listTipoProblema();
       _allPadrones = await _padronController.listPadron();
 
       // Ordenar las órdenes por ID de mayor a menor
-      _ordenes.sort((a, b) {
+      _ordenServicios.sort((a, b) {
         // Asumiendo que idOrdenTrabajo es un entero
-        return (b.idOrdenTrabajo ?? 0).compareTo(a.idOrdenTrabajo ?? 0);
+        return (b.idOrdenServicio ?? 0).compareTo(a.idOrdenServicio ?? 0);
       });
 
       _applyFilters();
@@ -114,32 +114,32 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
   void _applyFilters() {
     final query = _searchController.text.trim().toLowerCase();
     setState(() {
-      _filteredOrdenes =
-          _ordenes.where((orden) {
+      _filteredOrdenesServicios =
+          _ordenServicios.where((orden) {
             // Filtro por folio
             if (query.isNotEmpty &&
-                !(orden.folioOT ?? '').toLowerCase().contains(query)) {
+                !(orden.folioOS ?? '').toLowerCase().contains(query)) {
               return false;
             }
 
             // Filtro por estado
             if (_selectedEstado != null &&
                 _selectedEstado != 'Todos' &&
-                orden.estadoOT != _selectedEstado) {
+                orden.estadoOS != _selectedEstado) {
               return false;
             }
 
             // Filtro por prioridad
             if (_selectedPrioridad != null &&
                 _selectedPrioridad != 'Todos' &&
-                orden.prioridadOT != _selectedPrioridad) {
+                orden.prioridadOS != _selectedPrioridad) {
               return false;
             }
 
             // Filtro por medio
             if (_selectedMedio != null &&
                 _selectedMedio != 'Todos' &&
-                orden.medioOT != _selectedMedio) {
+                orden.medioOS != _selectedMedio) {
               return false;
             }
 
@@ -156,10 +156,10 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
             }
 
             // Filtro por fecha - CORRECCIÓN AQUÍ
-            if (_fechaRange != null && orden.fechaOT != null) {
+            if (_fechaRange != null && orden.fechaOS != null) {
               try {
                 // Parseamos la fecha correctamente
-                final parts = orden.fechaOT!.split(' ');
+                final parts = orden.fechaOS!.split(' ');
                 final dateParts = parts[0].split('/');
                 final timeParts = parts[1].split(':');
 
@@ -191,7 +191,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                   return false;
                 }
               } catch (e) {
-                print('Error al parsear fecha: ${orden.fechaOT} - $e');
+                print('Error al parsear fecha: ${orden.fechaOS} - $e');
                 return false;
               }
             }
@@ -229,17 +229,17 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     });
   }
 
-  Future<void> _updateSingleOrder(int idOrdenTrabajo) async {
+  Future<void> _updateSingleOrder(int idOrdenServicio) async {
     try {
-      final updatedOrder = await _ordenTrabajoController.getOrdenTrabajoXId(
-        idOrdenTrabajo,
+      final updatedOrder = await _ordenServicioController.getOrdenServicioXId(
+        idOrdenServicio,
       );
       setState(() {
-        final index = _ordenes.indexWhere(
-          (o) => o.idOrdenTrabajo == idOrdenTrabajo,
+        final index = _ordenServicios.indexWhere(
+          (o) => o.idOrdenServicio == idOrdenServicio,
         );
         if (index != -1) {
-          _ordenes[index] = updatedOrder!;
+          _ordenServicios[index] = updatedOrder!;
         }
         _applyFilters(); // Reaplicar filtros para actualizar _filteredOrdenes
       });
@@ -255,7 +255,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Listado de Órdenes de Trabajo',
+          'Listado de Órdenes de Servicio',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -496,7 +496,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                           color: Colors.blue.shade900,
                         ),
                       )
-                      : _filteredOrdenes.isEmpty
+                      : _filteredOrdenesServicios.isEmpty
                       ? const Center(
                         child: Text(
                           'No hay órdenes que coincidan con los filtros',
@@ -504,11 +504,11 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                       )
                       : ListView.separated(
                         padding: const EdgeInsets.all(8),
-                        itemCount: _filteredOrdenes.length,
+                        itemCount: _filteredOrdenesServicios.length,
                         separatorBuilder:
                             (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          final orden = _filteredOrdenes[index];
+                          final orden = _filteredOrdenesServicios[index];
 
                           // Obtener nombre del tipo de problema
                           final tipoProblema = _allTipoProblemas.firstWhere(
@@ -566,7 +566,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                       children: [
                                         // Folio
                                         Text(
-                                          'Folio: ${orden.folioOT ?? 'No disponible'}',
+                                          'Folio: ${orden.folioOS ?? 'No disponible'}',
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
@@ -580,7 +580,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                             //  Prioridad
                                             Chip(
                                               label: Text(
-                                                orden.prioridadOT ??
+                                                orden.prioridadOS ??
                                                     'No disponible',
                                                 style: const TextStyle(
                                                   color: Colors.white,
@@ -589,7 +589,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                               ),
                                               backgroundColor:
                                                   getPrioridadColor(
-                                                    orden.prioridadOT,
+                                                    orden.prioridadOS,
                                                   ),
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -601,7 +601,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                             //  Estado
                                             Chip(
                                               label: Text(
-                                                orden.estadoOT ??
+                                                orden.estadoOS ??
                                                     'No disponible',
                                                 style: const TextStyle(
                                                   color: Colors.white,
@@ -609,7 +609,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                                 ),
                                               ),
                                               backgroundColor: getEstadoColor(
-                                                orden.estadoOT,
+                                                orden.estadoOS,
                                               ),
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -622,7 +622,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                         const SizedBox(height: 8),
                                         // Fecha
                                         Text(
-                                          'Fecha: ${orden.fechaOT ?? 'No disponible'}',
+                                          'Fecha: ${orden.fechaOS ?? 'No disponible'}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
@@ -632,7 +632,7 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                         const SizedBox(height: 8),
                                         // Medio y Problema
                                         Text(
-                                          'Medio: ${orden.medioOT ?? 'No disponible'}',
+                                          'Medio: ${orden.medioOS ?? 'No disponible'}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
@@ -688,14 +688,14 @@ class _ListOrdenTrabajoState extends State<ListOrdenTrabajo> {
                                         context,
                                         MaterialPageRoute(
                                           builder:
-                                              (context) => DetailsOrdenTrabajo(
-                                                ordenTrabajo: orden,
+                                              (context) => DetailsOrdenServicio(
+                                                ordenServicio: orden,
                                               ),
                                         ),
                                       );
                                       if (result == true || result != null) {
                                         await _updateSingleOrder(
-                                          orden.idOrdenTrabajo!,
+                                          orden.idOrdenServicio!,
                                         );
                                       }
                                     },

@@ -2,8 +2,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jmas_gestion/controllers/evaluacion_orden_trabajo_controller.dart';
-import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
+import 'package:jmas_gestion/controllers/evaluacion_orden_servicio_controller.dart';
+import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/controllers/trabajo_realizado_controller.dart';
@@ -14,19 +14,19 @@ import 'package:jmas_gestion/widgets/mensajes.dart';
 import 'package:jmas_gestion/widgets/permission_widget.dart';
 import 'package:jmas_gestion/widgets/widgets_detailOT.dart';
 
-class DetailsOrdenTrabajo extends StatefulWidget {
-  final OrdenTrabajo ordenTrabajo;
-  const DetailsOrdenTrabajo({super.key, required this.ordenTrabajo});
+class DetailsOrdenServicio extends StatefulWidget {
+  final OrdenServicio ordenServicio;
+  const DetailsOrdenServicio({super.key, required this.ordenServicio});
 
   @override
-  State<DetailsOrdenTrabajo> createState() => _DetailsOrdenTrabajoState();
+  State<DetailsOrdenServicio> createState() => _DetailsOrdenServicioState();
 }
 
-class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
+class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   final AuthService _authService = AuthService();
   final PadronController _padronController = PadronController();
-  final EvaluacionOrdenTrabajoController _evaluacionOrdenTrabajoController =
-      EvaluacionOrdenTrabajoController();
+  final EvaluacionOrdenServicioController _evaluacionOrdenServicioController =
+      EvaluacionOrdenServicioController();
   final UsersController _usersController = UsersController();
   final TrabajoRealizadoController _trabajoRealizadoController =
       TrabajoRealizadoController();
@@ -41,8 +41,8 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   // ignore: unused_field
   Users? _evaluador;
   // ignore: unused_field
-  EvaluacionOT? _evaluacionOT;
-  List<EvaluacionOT> _evaluaciones = [];
+  EvaluacionOS? _evaluacionOS;
+  List<EvaluacionOS> _evaluaciones = [];
   int _currentEvaluacionIndex = 0;
   bool _isLoadingEvaluacion = false;
   List<TrabajoRealizado> _trabajosRealizados = [];
@@ -55,7 +55,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     super.initState();
 
     _loadAllUsers();
-    if (widget.ordenTrabajo.idPadron != null) {
+    if (widget.ordenServicio.idPadron != null) {
       _loadPadronInfo();
     }
     _loadProblemas();
@@ -117,7 +117,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
         idTrabajoRealizado: 0,
         folioTR: folioTR,
         idUserTR: _selectedEmpleado?.id_User,
-        idOrdenTrabajo: widget.ordenTrabajo.idOrdenTrabajo,
+        idOrdenServicio: widget.ordenServicio.idOrdenServicio,
       );
 
       return await _trabajoRealizadoController.addTrabajoRealizado(trabajo);
@@ -131,7 +131,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     setState(() => _isLoadingTrabajos = true);
     try {
       final trabajos = await _trabajoRealizadoController.getTRXOtID(
-        widget.ordenTrabajo.idOrdenTrabajo!,
+        widget.ordenServicio.idOrdenServicio!,
       );
       setState(() => _trabajosRealizados = trabajos);
     } catch (e) {
@@ -144,8 +144,8 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   Future<void> _loadEvaluacion() async {
     setState(() => _isLoadingEvaluacion = true);
     try {
-      final evaluaciones = await _evaluacionOrdenTrabajoController.listEvXidOT(
-        widget.ordenTrabajo.idOrdenTrabajo!,
+      final evaluaciones = await _evaluacionOrdenServicioController.listEvXidOS(
+        widget.ordenServicio.idOrdenServicio!,
       );
       if (evaluaciones.isNotEmpty) {
         // ignore: unused_local_variable
@@ -193,7 +193,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     try {
       final padronList = await _padronController.listPadron();
       final foundPadron = padronList.firstWhere(
-        (p) => p.idPadron == widget.ordenTrabajo.idPadron,
+        (p) => p.idPadron == widget.ordenServicio.idPadron,
         orElse: () => Padron(),
       );
       if (foundPadron.idPadron != null) {
@@ -223,7 +223,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'Detalles: ${widget.ordenTrabajo.folioOT}',
+            'Detalles: ${widget.ordenServicio.folioOS}',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
@@ -277,7 +277,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
   Widget _buildInfoCard() {
     // Obtener nombre del tipo de problema
     final tipoProblema = _allTipoProblemas.firstWhere(
-      (tp) => tp.idTipoProblema == widget.ordenTrabajo.idTipoProblema,
+      (tp) => tp.idTipoProblema == widget.ordenServicio.idTipoProblema,
       orElse: () => TipoProblema(),
     );
     return Card(
@@ -296,11 +296,11 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
               ),
             ),
             const SizedBox(height: 10),
-            _buildInfoRow('Folio', widget.ordenTrabajo.folioOT),
+            _buildInfoRow('Folio', widget.ordenServicio.folioOS),
             const Divider(),
-            _buildInfoRow('Fecha', formatDate(widget.ordenTrabajo.fechaOT)),
+            _buildInfoRow('Fecha', formatDate(widget.ordenServicio.fechaOS)),
             const Divider(),
-            _buildInfoRow('Medio', widget.ordenTrabajo.medioOT),
+            _buildInfoRow('Medio', widget.ordenServicio.medioOS),
             const Divider(),
             _buildInfoRow(
               'Tipo de Problema',
@@ -322,7 +322,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Estado de la Orden',
+              'Estado de la Orden de Servicio',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -336,11 +336,11 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                 children: [
                   Chip(
                     label: Text(
-                      widget.ordenTrabajo.prioridadOT ?? 'No disponible',
+                      widget.ordenServicio.prioridadOS ?? 'No disponible',
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     backgroundColor: getPrioridadColor(
-                      widget.ordenTrabajo.prioridadOT,
+                      widget.ordenServicio.prioridadOS,
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -350,11 +350,11 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                   const SizedBox(width: 20),
                   Chip(
                     label: Text(
-                      widget.ordenTrabajo.estadoOT ?? 'No disponible',
+                      widget.ordenServicio.estadoOS ?? 'No disponible',
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     backgroundColor: getEstadoColor(
-                      widget.ordenTrabajo.estadoOT,
+                      widget.ordenServicio.estadoOS,
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -371,19 +371,19 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                 Icon(
                   Icons.construction,
                   color:
-                      widget.ordenTrabajo.materialOT == true
+                      widget.ordenServicio.materialOS == true
                           ? Colors.orange
                           : Colors.grey.shade600,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  widget.ordenTrabajo.materialOT == true
+                  widget.ordenServicio.materialOS == true
                       ? 'Requiere material'
                       : 'No requiere material',
                   style: TextStyle(
                     fontSize: 16,
                     color:
-                        widget.ordenTrabajo.materialOT == true
+                        widget.ordenServicio.materialOS == true
                             ? Colors.orange
                             : Colors.grey,
                     fontWeight: FontWeight.bold,
@@ -562,7 +562,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                         onPressed: _nextEvaluacion,
                         tooltip: 'Siguiente evaluación',
                       ),
-                    if (widget.ordenTrabajo.estadoOT == 'Pendiente')
+                    if (widget.ordenServicio.estadoOS == 'Pendiente')
                       PermissionWidget(
                         permission: 'evaluar',
                         child: Container(
@@ -588,7 +588,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                           ),
                         ),
                       ),
-                    if (widget.ordenTrabajo.estadoOT == 'Revisión')
+                    if (widget.ordenServicio.estadoOS == 'Revisión')
                       PermissionWidget(
                         permission: 'evaluar',
                         child: Container(
@@ -624,14 +624,14 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                 child: CircularProgressIndicator(color: Colors.indigo.shade900),
               )
             else if (currentEvaluacion != null) ...[
-              _buildInfoRow('Fecha', currentEvaluacion.fechaEOT ?? 'N/A'),
+              _buildInfoRow('Fecha', currentEvaluacion.fechaEOS ?? 'N/A'),
               _buildInfoRow(
                 'Comentarios',
-                currentEvaluacion.comentariosEOT ?? 'N/A',
+                currentEvaluacion.comentariosEOS ?? 'N/A',
               ),
               _buildInfoRow(
                 'Estado',
-                currentEvaluacion.estadoEnviadoEOT ?? 'N/A',
+                currentEvaluacion.estadoEnviadoEOS ?? 'N/A',
               ),
               const SizedBox(height: 8),
               const Text(
@@ -664,13 +664,13 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     final formKey = GlobalKey<FormState>();
     String? estadoSeleccionado = 'Aprobar';
     final TextEditingController comentarioController = TextEditingController();
-    final EvaluacionOrdenTrabajoController evaluacionController =
-        EvaluacionOrdenTrabajoController();
-    final OrdenTrabajoController ordenTrabajoController =
-        OrdenTrabajoController();
+    final EvaluacionOrdenServicioController evaluacionOSController =
+        EvaluacionOrdenServicioController();
+    final OrdenServicioController ordenServicioController =
+        OrdenServicioController();
 
     bool isSubmitting = false;
-    bool showAsignarUsuario = widget.ordenTrabajo.materialOT != true;
+    bool showAsignarUsuario = widget.ordenServicio.materialOS != true;
 
     // Filtrar solo empleados al inicio
     List<Users> empleados =
@@ -706,7 +706,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                 setState(() {
                                   estadoSeleccionado = value;
                                   showAsignarUsuario =
-                                      widget.ordenTrabajo.materialOT != true &&
+                                      widget.ordenServicio.materialOS != true &&
                                       value == 'Aprobar';
                                 });
                               },
@@ -781,36 +781,36 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                         ? 'Aprobada - A'
                                         : 'Rechazada';
 
-                                final ordenActualizada = widget.ordenTrabajo
-                                    .copyWith(estadoOT: nuevoEstado);
+                                final ordenActualizada = widget.ordenServicio
+                                    .copyWith(estadoOS: nuevoEstado);
 
                                 // Crear objeto de evaluación
-                                final evaluacion = EvaluacionOT(
-                                  idEvaluacionOrdenTrabajo: 0,
-                                  fechaEOT: DateFormat(
+                                final evaluacion = EvaluacionOS(
+                                  idEvaluacionOrdenServicio: 0,
+                                  fechaEOS: DateFormat(
                                     'dd/MM/yyyy HH:mm',
                                   ).format(DateTime.now()),
-                                  comentariosEOT: comentarioController.text,
-                                  estadoEnviadoEOT: estadoSeleccionado,
+                                  comentariosEOS: comentarioController.text,
+                                  estadoEnviadoEOS: estadoSeleccionado,
                                   idUser: int.tryParse(idUser!),
-                                  idOrdenTrabajo:
-                                      widget.ordenTrabajo.idOrdenTrabajo,
+                                  idOrdenServicio:
+                                      widget.ordenServicio.idOrdenServicio,
                                 );
 
                                 // Enviar cambios al servidor
                                 final successEvaluacion =
-                                    await evaluacionController.addEvOT(
+                                    await evaluacionOSController.addEvOS(
                                       evaluacion,
                                     );
 
                                 final successOrden =
-                                    await ordenTrabajoController
-                                        .editOrdenTrabajo(ordenActualizada);
+                                    await ordenServicioController
+                                        .editOrdenServicio(ordenActualizada);
 
                                 // Si se aprobó y no requiere material, crear trabajo realizado
                                 bool successTrabajo = true;
                                 if (estadoSeleccionado == 'Aprobar' &&
-                                    widget.ordenTrabajo.materialOT != true &&
+                                    widget.ordenServicio.materialOS != true &&
                                     _selectedEmpleado != null) {
                                   successTrabajo = await _crearTrabajo();
                                 }
@@ -825,7 +825,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                   );
                                   // Forzar recarga de la página
                                   setState(() {
-                                    widget.ordenTrabajo.estadoOT = nuevoEstado;
+                                    widget.ordenServicio.estadoOS = nuevoEstado;
                                   });
                                   await _loadEvaluacion();
                                   await _loadTrabajosRealizados();
@@ -870,10 +870,10 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
     final formKey = GlobalKey<FormState>();
     String? estadoSeleccionado = 'Cerrar';
     final TextEditingController comentarioController = TextEditingController();
-    final EvaluacionOrdenTrabajoController evaluacionController =
-        EvaluacionOrdenTrabajoController();
-    final OrdenTrabajoController ordenTrabajoController =
-        OrdenTrabajoController();
+    final EvaluacionOrdenServicioController evaluacionOSController =
+        EvaluacionOrdenServicioController();
+    final OrdenServicioController ordenServicioController =
+        OrdenServicioController();
 
     bool isSubmitting = false;
 
@@ -954,31 +954,31 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
                                         ? 'Cerrada'
                                         : 'Devuelta';
 
-                                final ordenActualizada = widget.ordenTrabajo
-                                    .copyWith(estadoOT: nuevoEstado);
+                                final ordenActualizada = widget.ordenServicio
+                                    .copyWith(estadoOS: nuevoEstado);
 
                                 // Crear objeto de evaluación/revisión
-                                final evaluacion = EvaluacionOT(
-                                  idEvaluacionOrdenTrabajo: 0,
-                                  fechaEOT: DateFormat(
+                                final evaluacion = EvaluacionOS(
+                                  idEvaluacionOrdenServicio: 0,
+                                  fechaEOS: DateFormat(
                                     'dd/MM/yyyy HH:mm',
                                   ).format(DateTime.now()),
-                                  comentariosEOT: comentarioController.text,
-                                  estadoEnviadoEOT: estadoSeleccionado,
+                                  comentariosEOS: comentarioController.text,
+                                  estadoEnviadoEOS: estadoSeleccionado,
                                   idUser: int.tryParse(idUser!),
-                                  idOrdenTrabajo:
-                                      widget.ordenTrabajo.idOrdenTrabajo,
+                                  idOrdenServicio:
+                                      widget.ordenServicio.idOrdenServicio,
                                 );
 
                                 // Enviar cambios al servidor
                                 final successEvaluacion =
-                                    await evaluacionController.addEvOT(
+                                    await evaluacionOSController.addEvOS(
                                       evaluacion,
                                     );
 
                                 final successOrden =
-                                    await ordenTrabajoController
-                                        .editOrdenTrabajo(ordenActualizada);
+                                    await ordenServicioController
+                                        .editOrdenServicio(ordenActualizada);
 
                                 if (successEvaluacion && successOrden) {
                                   Navigator.pop(context);
@@ -986,7 +986,7 @@ class _DetailsOrdenTrabajoState extends State<DetailsOrdenTrabajo> {
 
                                   // Actualizar el estado local
                                   setState(() {
-                                    widget.ordenTrabajo.estadoOT = nuevoEstado;
+                                    widget.ordenServicio.estadoOS = nuevoEstado;
                                   });
 
                                   await _loadEvaluacion();

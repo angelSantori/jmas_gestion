@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jmas_gestion/controllers/orden_trabajo_controller.dart';
+import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/widgets/buscar_padron.dart';
@@ -8,18 +8,18 @@ import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/generales.dart';
 import 'package:jmas_gestion/widgets/mensajes.dart';
 
-class AddOrdenTrabajo extends StatefulWidget {
+class AddOrdenServicio extends StatefulWidget {
   final String? userName;
   final String? idUser;
-  const AddOrdenTrabajo({super.key, this.userName, this.idUser});
+  const AddOrdenServicio({super.key, this.userName, this.idUser});
 
   @override
-  State<AddOrdenTrabajo> createState() => _AddOrdenTrabajoState();
+  State<AddOrdenServicio> createState() => _AddOrdenServicioState();
 }
 
-class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
-  final OrdenTrabajoController _ordenTrabajoController =
-      OrdenTrabajoController();
+class _AddOrdenServicioState extends State<AddOrdenServicio> {
+  final OrdenServicioController _ordenServicioController =
+      OrdenServicioController();
   final PadronController _padronController = PadronController();
 
   final _formKey = GlobalKey<FormState>();
@@ -64,7 +64,7 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
   }
 
   Future<void> _loadFolioOT() async {
-    final fetchFolioOT = await _ordenTrabajoController.getNextOTFolio();
+    final fetchFolioOT = await _ordenServicioController.getNextOSFolio();
     setState(() {
       _codFolio = fetchFolioOT;
     });
@@ -78,8 +78,7 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
     });
   }
 
-  // Método de guardado mejorado
-  Future<void> _guardarOrdenTrabajo() async {
+  Future<void> _guardarOrdenServicio() async {
     // Primero validamos el formulario básico
     if (!_formKey.currentState!.validate()) {
       return;
@@ -94,21 +93,21 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
     setState(() => _isLoading = true);
 
     try {
-      final ordenTrabajo = _crearOT();
-      final success = await _ordenTrabajoController.addOrdenTrabajo(
+      final ordenTrabajo = _crearOS();
+      final success = await _ordenServicioController.addOrdenServicio(
         ordenTrabajo,
       );
 
       if (success && mounted) {
-        showOk(context, 'Orden de trabajo guardada exitosamente');
+        showOk(context, 'Orden de servicio registrada exitosamente');
         _limpiarFormulario();
       } else if (mounted) {
-        showError(context, 'Error al guardar la orden de trabajo');
+        showError(context, 'Error al registrar la orden de servicio');
       }
     } catch (e) {
       if (mounted) {
-        showError(context, 'Error al guardar la orden de trabajo');
-        print('Error al guardar la orden de trabajo: $e');
+        showError(context, 'Error al registrar la orden de servicio');
+        print('Error al registrar la orden de servicio: $e');
       }
     } finally {
       if (mounted) {
@@ -130,15 +129,15 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
     });
   }
 
-  OrdenTrabajo _crearOT() {
-    return OrdenTrabajo(
-      idOrdenTrabajo: 0,
-      folioOT: _codFolio,
-      fechaOT: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
-      medioOT: _selectedMedio,
-      materialOT: _requiereMaterial,
-      estadoOT: 'Pendiente',
-      prioridadOT: _selectedPrioridad,
+  OrdenServicio _crearOS() {
+    return OrdenServicio(
+      idOrdenServicio: 0,
+      folioOS: _codFolio,
+      fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
+      medioOS: _selectedMedio,
+      materialOS: _requiereMaterial,
+      estadoOS: 'Pendiente',
+      prioridadOS: _selectedPrioridad,
       idUser: int.tryParse(widget.idUser!),
       idPadron: _selectedPadron?.idPadron,
       idTipoProblema: _selectedTipoProblema!.idTipoProblema,
@@ -399,7 +398,7 @@ class _AddOrdenTrabajoState extends State<AddOrdenTrabajo> {
                           onPressed:
                               (_isLoading || _selectedPadron == null)
                                   ? null
-                                  : _guardarOrdenTrabajo,
+                                  : _guardarOrdenServicio,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 (_selectedPadron == null)

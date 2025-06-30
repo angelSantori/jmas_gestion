@@ -199,7 +199,8 @@ class _LoginPageState extends State<LoginPage>
                                 const SizedBox(height: 10),
                                 // Título "ALMACEN"
                                 const Text(
-                                  'ORDEN DE TRABAJO',
+                                  'ORDEN DE SERVICIO',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Color(0xFF1F3567),
                                     fontSize: 35,
