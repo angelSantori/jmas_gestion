@@ -371,21 +371,27 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                 Icon(
                   Icons.construction,
                   color:
-                      widget.ordenServicio.materialOS == true
+                      widget.ordenServicio.materialOS == null
+                          ? Colors.grey.shade600
+                          : widget.ordenServicio.materialOS == true
                           ? Colors.orange
-                          : Colors.grey.shade600,
+                          : Colors.blue.shade600,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  widget.ordenServicio.materialOS == true
+                  widget.ordenServicio.materialOS == null
+                      ? 'S/A'
+                      : widget.ordenServicio.materialOS == true
                       ? 'Requiere material'
                       : 'No requiere material',
                   style: TextStyle(
                     fontSize: 16,
                     color:
-                        widget.ordenServicio.materialOS == true
+                        widget.ordenServicio.materialOS == null
+                            ? Colors.grey.shade600
+                            : widget.ordenServicio.materialOS == true
                             ? Colors.orange
-                            : Colors.grey,
+                            : Colors.blue.shade600,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

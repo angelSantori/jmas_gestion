@@ -26,6 +26,8 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
 
   final TextEditingController _idpadronController = TextEditingController();
 
+  final TextEditingController _contactoCTR = TextEditingController();
+
   String? _codFolio;
   final String _showFecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
@@ -45,8 +47,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
 
   String? _selectedPrioridad;
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
-
-  bool _requiereMaterial = false;
 
   Padron? _selectedPadron;
 
@@ -120,10 +120,10 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
     _formKey.currentState?.reset();
     setState(() {
       _idpadronController.clear();
+      _contactoCTR.clear();
       _selectedMedio = null;
       _selectedPrioridad = null;
       _selectedTipoProblema = null;
-      _requiereMaterial = false;
       _selectedPadron = null;
       _loadFolioOT(); // Recargar folio para nueva orden
     });
@@ -135,9 +135,9 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       folioOS: _codFolio,
       fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
       medioOS: _selectedMedio,
-      materialOS: _requiereMaterial,
       estadoOS: 'Pendiente',
       prioridadOS: _selectedPrioridad,
+      contactoOS: int.tryParse(_contactoCTR.text),
       idUser: int.tryParse(widget.idUser!),
       idPadron: _selectedPadron?.idPadron,
       idTipoProblema: _selectedTipoProblema!.idTipoProblema,
@@ -213,6 +213,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
 
                                   Row(
                                     children: [
+                                      //  Medio
                                       Expanded(
                                         child: CustomListaDesplegable(
                                           value: _selectedMedio,
@@ -232,12 +233,9 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                           },
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 30),
+                                      const SizedBox(width: 20),
 
-                                  Row(
-                                    children: [
+                                      //  Tipo Problema
                                       Expanded(
                                         child: CustomListaDesplegableTipo<
                                           TipoProblema
@@ -261,8 +259,12 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                                   '${problema.nombreTP ?? 'Sin nombre'} - (${problema.idTipoProblema})',
                                         ),
                                       ),
-                                      const SizedBox(width: 20),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 30),
 
+                                  Row(
+                                    children: [
                                       Expanded(
                                         child: CustomListaDesplegable(
                                           value: _selectedPrioridad,
@@ -282,87 +284,21 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                           },
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 30),
+                                      const SizedBox(width: 20),
 
-                                  // Requiere material
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'Requiere material:',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.blue.shade900,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      // Contenedor para el switch con etiquetas
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade50,
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.blue.shade200,
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'No',
-                                              style: TextStyle(
-                                                color:
-                                                    !_requiereMaterial
-                                                        ? Colors.blue.shade900
-                                                        : Colors.grey,
-                                                fontWeight:
-                                                    !_requiereMaterial
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Transform.scale(
-                                              scale: 1.2,
-                                              child: Switch(
-                                                value: _requiereMaterial,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    _requiereMaterial = value;
-                                                  });
-                                                },
-                                                activeColor:
-                                                    Colors.blue.shade900,
-                                                activeTrackColor:
-                                                    Colors.blue.shade200,
-                                                inactiveTrackColor:
-                                                    Colors.grey.shade300,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Sí',
-                                              style: TextStyle(
-                                                color:
-                                                    _requiereMaterial
-                                                        ? Colors.blue.shade900
-                                                        : Colors.grey,
-                                                fontWeight:
-                                                    _requiereMaterial
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                              ),
-                                            ),
-                                          ],
+                                      //  Contacto
+                                      Expanded(
+                                        child: CustomTextFieldNumero(
+                                          controller: _contactoCTR,
+                                          labelText: 'Contacto',
+                                          prefixIcon: Icons.phone,
+                                          validator: (contacto) {
+                                            if (contacto == null ||
+                                                contacto.isEmpty) {
+                                              return 'Contacto obligatorio';
+                                            }
+                                            return null;
+                                          },
                                         ),
                                       ),
                                     ],
@@ -370,7 +306,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                 ],
                               ),
                             ),
-
                             const SizedBox(width: 60),
 
                             // Columna derecha (padrón)
