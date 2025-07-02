@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_servicio_controller.dart';
+import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
@@ -32,8 +33,10 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
       TrabajoRealizadoController();
   final TipoProblemaController _tipoProblemaController =
       TipoProblemaController();
+  final MedioController _medioController = MedioController();
 
   List<TipoProblema> _allTipoProblemas = [];
+  List<Medios> _allMedios = [];
 
   Padron? _padron;
   String? idUser;
@@ -58,7 +61,8 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     if (widget.ordenServicio.idPadron != null) {
       _loadPadronInfo();
     }
-    _loadProblemas();
+    _loadTipoProblema();
+    _loadMedios();
     _getUserId();
     _loadEvaluacion();
     _loadTrabajosRealizados();
@@ -86,11 +90,19 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     }
   }
 
-  Future<void> _loadProblemas() async {
+  Future<void> _loadTipoProblema() async {
     try {
       _allTipoProblemas = await _tipoProblemaController.listTipoProblema();
     } catch (e) {
-      print('Error _loadProblemas | DetailsOrdenTRabajo: $e');
+      print('Error _loadData | DetailsOrdenTRabajo: $e');
+    }
+  }
+
+  Future<void> _loadMedios() async {
+    try {
+      _allMedios = await _medioController.listMedios();
+    } catch (e) {
+      print('Error _loadMedios | DetailsOrdenTRabajo: $e');
     }
   }
 
@@ -280,6 +292,13 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
       (tp) => tp.idTipoProblema == widget.ordenServicio.idTipoProblema,
       orElse: () => TipoProblema(),
     );
+
+    // Obtener nombre del medio
+    final medioSL = _allMedios.firstWhere(
+      (med) => med.idMedio == widget.ordenServicio.idMedio,
+      orElse: () => Medios(),
+    );
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -300,7 +319,10 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
             const Divider(),
             _buildInfoRow('Fecha', formatDate(widget.ordenServicio.fechaOS)),
             const Divider(),
-            _buildInfoRow('Medio', widget.ordenServicio.medioOS),
+            _buildInfoRow(
+              'Medio',
+              '${medioSL.nombreMedio ?? 'Sin Nombre'} - (${medioSL.idMedio})',
+            ),
             const Divider(),
             _buildInfoRow(
               'Tipo de Problema',
