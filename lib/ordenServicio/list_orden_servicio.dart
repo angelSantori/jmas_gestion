@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
@@ -21,6 +22,7 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
   final TipoProblemaController _tipoProblemaController =
       TipoProblemaController();
   final PadronController _padronController = PadronController();
+  final MedioController _medioController = MedioController();
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -32,6 +34,10 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
   List<TipoProblema> _allTipoProblemas = [];
   String? _selectedTipoProblema;
 
+  //  Medios
+  List<Medios> _allMedios = [];
+  String? _selectedMedio;
+
   //  Padron
   final TextEditingController _padronIdController = TextEditingController();
   Padron? _selectedPadron;
@@ -40,7 +46,6 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
   // Filtros
   String _searchFolio = '';
   String? _selectedEstado;
-  String? _selectedMedio;
   String? _selectedPrioridad;
   DateTimeRange? _fechaRange;
 
@@ -52,8 +57,6 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
     'Devuelta',
     'Cerrada',
   ];
-
-  final List<String> _medios = ["Wasa", "Fon", "Ventanilla", "Otro"];
 
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
 
@@ -77,6 +80,7 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
       // Obtener las órdenes normalmente
       _ordenServicios = await _ordenServicioController.listOrdenServicio();
       _allTipoProblemas = await _tipoProblemaController.listTipoProblema();
+      _allMedios = await _medioController.listMedios();
       _allPadrones = await _padronController.listPadron();
 
       // Ordenar las órdenes por ID de mayor a menor
@@ -138,8 +142,7 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
 
             // Filtro por medio
             if (_selectedMedio != null &&
-                _selectedMedio != 'Todos' &&
-                orden.medioOS != _selectedMedio) {
+                orden.idMedio.toString() != _selectedMedio) {
               return false;
             }
 
@@ -418,26 +421,36 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
 
                       //Medio
                       Expanded(
-                        child: CustomListaDesplegable(
-                          value: _selectedMedio,
+                        child: CustomListaDesplegableTipo<Medios>(
+                          value:
+                              _selectedMedio != null
+                                  ? _allMedios.firstWhere(
+                                    (medio) =>
+                                        medio.idMedio.toString() ==
+                                        _selectedMedio,
+                                  )
+                                  : null,
                           labelText: 'Medio',
-                          items: _medios,
-                          onChanged: (value) {
+                          items: _allMedios,
+                          onChanged: (Medios? newMedio) {
                             setState(() {
-                              _selectedMedio = value;
+                              _selectedMedio = newMedio?.idMedio.toString();
                               _applyFilters();
                             });
                           },
+                          itemLabelBuilder:
+                              (medioLB) =>
+                                  '${medioLB.nombreMedio ?? 'N/A'} - (${medioLB.idMedio})',
                           trailingIcon:
                               _selectedMedio != null
                                   ? IconButton(
-                                    icon: const Icon(Icons.close, size: 18),
                                     onPressed: () {
                                       setState(() {
                                         _selectedMedio = null;
                                         _applyFilters();
                                       });
                                     },
+                                    icon: const Icon(Icons.close, size: 18),
                                   )
                                   : null,
                         ),
@@ -514,6 +527,11 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
                           final tipoProblema = _allTipoProblemas.firstWhere(
                             (tp) => tp.idTipoProblema == orden.idTipoProblema,
                             orElse: () => TipoProblema(),
+                          );
+
+                          final medio = _allMedios.firstWhere(
+                            (medio) => medio.idMedio == orden.idMedio,
+                            orElse: () => Medios(),
                           );
 
                           // Obtener datos del padrón
@@ -632,7 +650,7 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
                                         const SizedBox(height: 8),
                                         // Medio y Problema
                                         Text(
-                                          'Medio: ${orden.medioOS ?? 'No disponible'}',
+                                          'Medio: ${medio.nombreMedio ?? 'No disponible'}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
