@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
@@ -33,18 +34,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
 
   bool _isLoading = false;
 
-  String? _selectedMedio;
-  final List<String> _medios = [
-    "Wasa",
-    "Fon",
-    "Ventanilla",
-    "Pitazo",
-    "App",
-    "Teléfono",
-    "Presencial",
-    "Inspección",
-  ];
-
   String? _selectedPrioridad;
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
 
@@ -56,11 +45,16 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   List<TipoProblema> _allProblemas = [];
   TipoProblema? _selectedTipoProblema;
 
+  //  Medio
+  final MedioController _medioController = MedioController();
+  List<Medios> _allMedios = [];
+  Medios? _selectedMedio;
+
   @override
   void initState() {
     super.initState();
     _loadFolioOT();
-    _loadTipoProblemas();
+    _loadData();
   }
 
   Future<void> _loadFolioOT() async {
@@ -70,11 +64,13 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
     });
   }
 
-  Future<void> _loadTipoProblemas() async {
+  Future<void> _loadData() async {
     List<TipoProblema> problemas =
         await _tipoProblemaController.listTipoProblema();
+    List<Medios> medios = await _medioController.listMedios();
     setState(() {
       _allProblemas = problemas;
+      _allMedios = medios;
     });
   }
 
@@ -134,13 +130,13 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       idOrdenServicio: 0,
       folioOS: _codFolio,
       fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
-      medioOS: _selectedMedio,
       estadoOS: 'Pendiente',
       prioridadOS: _selectedPrioridad,
       contactoOS: int.tryParse(_contactoCTR.text),
       idUser: int.tryParse(widget.idUser!),
       idPadron: _selectedPadron?.idPadron,
       idTipoProblema: _selectedTipoProblema!.idTipoProblema,
+      idMedio: _selectedMedio!.idMedio,
     );
   }
 
@@ -215,22 +211,26 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                     children: [
                                       //  Medio
                                       Expanded(
-                                        child: CustomListaDesplegable(
+                                        child: CustomListaDesplegableTipo<
+                                          Medios
+                                        >(
                                           value: _selectedMedio,
                                           labelText: 'Medio',
-                                          items: _medios,
+                                          items: _allMedios,
                                           onChanged: (medio) {
                                             setState(() {
                                               _selectedMedio = medio;
                                             });
                                           },
-                                          validator: (medio) {
-                                            if (medio == null ||
-                                                medio.isEmpty) {
-                                              return 'Medio obligatorio';
+                                          validator: (medioV) {
+                                            if (medioV == null) {
+                                              return 'Debe seleccionar un medio';
                                             }
                                             return null;
                                           },
+                                          itemLabelBuilder:
+                                              (medioLB) =>
+                                                  '${medioLB.nombreMedio ?? 'Sin Nombre'} - (${medioLB.idMedio})',
                                         ),
                                       ),
                                       const SizedBox(width: 20),
