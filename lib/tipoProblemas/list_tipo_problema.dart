@@ -319,7 +319,7 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade900,
+                                            color: Colors.indigo.shade900,
                                           ),
                                         ),
                                       ],
