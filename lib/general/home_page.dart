@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 //import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jmas_gestion/general/login_page.dart';
+import 'package:jmas_gestion/medios/list_medios.dart';
 import 'package:jmas_gestion/ordenServicio/add_orden_servicio.dart';
 import 'package:jmas_gestion/ordenServicio/list_orden_servicio.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
@@ -75,6 +76,9 @@ class _HomePageState extends State<HomePage>
 
       //  Problemas
       'listTipoProblema': () => const ListTipoProblema(),
+
+      //  Medios
+      'listMedios': () => ListMedios(),
       //Productos
       // 'addProducto': () => const AddProductoPage(),
       // 'listProducto': () => const ListProductoPage(),
@@ -283,6 +287,14 @@ class _HomePageState extends State<HomePage>
                               color: Colors.white,
                             ),
                             onTap: () => _navigateTo('listTipoProblema'),
+                          ),
+                          CustomListTile(
+                            title: 'Medios',
+                            icon: Icon(
+                              Icons.dark_mode_outlined,
+                              color: Colors.white,
+                            ),
+                            onTap: () => _navigateTo('listMedios'),
                           ),
                         ],
                       ),
