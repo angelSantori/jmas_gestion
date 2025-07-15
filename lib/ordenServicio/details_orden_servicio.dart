@@ -9,6 +9,7 @@ import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/controllers/trabajo_realizado_controller.dart';
 import 'package:jmas_gestion/controllers/users_controller.dart';
+import 'package:jmas_gestion/ordenServicio/widgets_os.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/mensajes.dart';
@@ -39,6 +40,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   List<Medios> _allMedios = [];
 
   Padron? _padron;
+  TipoProblema? _problema;
   String? idUser;
   Users? _selectedEmpleado;
   // ignore: unused_field
@@ -56,17 +58,14 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   @override
   void initState() {
     super.initState();
-
     _loadAllUsers();
-    if (widget.ordenServicio.idPadron != null) {
-      _loadPadronInfo();
-    }
+    _loadPadronInfo();
+    _loadProblemaInfo();
     _loadTipoProblema();
     _loadMedios();
     _getUserId();
     _loadEvaluacion();
     _loadTrabajosRealizados();
-
     _loadFolioTR();
   }
 
@@ -124,17 +123,27 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
 
   Future<bool> _crearTrabajo() async {
     if (_selectedEmpleado == null) return false;
+    // Verificar que los datos necesarios están disponibles
+    if (_padron == null || _problema == null) {
+      print('Datos faltantes: Padrón: $_padron, Problema: $_problema');
+      return false;
+    }
     try {
       final trabajo = TrabajoRealizado(
         idTrabajoRealizado: 0,
         folioTR: folioTR,
-        idUserTR: _selectedEmpleado?.id_User,
+        idUserTR: _selectedEmpleado!.id_User,
         idOrdenServicio: widget.ordenServicio.idOrdenServicio,
+        folioOS: widget.ordenServicio.folioOS,
+        padronNombre: _padron!.padronNombre,
+        padronDireccion: _padron!.padronDireccion,
+        problemaNombre: _problema!.nombreTP,
       );
+      print('Enviando trabajo: ${trabajo.toMap()}'); // Agrega logging
 
       return await _trabajoRealizadoController.addTrabajoRealizado(trabajo);
     } catch (e) {
-      print('Error _crearTrabajo | addSalidaPage: $e');
+      print('Error _crearTrabajo | detailsOrdenServicio: $e');
       return false;
     }
   }
@@ -218,6 +227,23 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     }
   }
 
+  Future<void> _loadProblemaInfo() async {
+    try {
+      final problemasList = await _tipoProblemaController.listTipoProblema();
+      final foundProblema = problemasList.firstWhere(
+        (probl) => probl.idTipoProblema == widget.ordenServicio.idTipoProblema,
+        orElse: () => TipoProblema(),
+      );
+      if (foundProblema.idTipoProblema != null) {
+        setState(() {
+          _problema = foundProblema;
+        });
+      }
+    } catch (e) {
+      print('Error al cargar información del problema: $e');
+    }
+  }
+
   Future<void> _getUserId() async {
     final decodeToken = await _authService.decodeToken();
     setState(() {
@@ -253,7 +279,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Tarjeta de Datos Generales (izquierda)
-                  Expanded(flex: 1, child: _buildInfoCard()),
+                  Expanded(flex: 1, child: _buildInfoCardInfoGeneral()),
                   const SizedBox(width: 20),
 
                   // Tarjeta de Estado y descripción a la derecha
@@ -286,7 +312,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCardInfoGeneral() {
     // Obtener nombre del tipo de problema
     final tipoProblema = _allTipoProblemas.firstWhere(
       (tp) => tp.idTipoProblema == widget.ordenServicio.idTipoProblema,
@@ -327,6 +353,11 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
             _buildInfoRow(
               'Tipo de Problema',
               '${tipoProblema.nombreTP ?? 'Sin Nombre'} - (${tipoProblema.idTipoProblema})',
+            ),
+            const Divider(),
+            _buildInfoRow(
+              'Contacto',
+              '${widget.ordenServicio.contactoOS ?? 'Sin contacto'}',
             ),
           ],
         ),
@@ -1139,6 +1170,8 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                           'ID Salida',
                           trabajos.idSalida?.toString(),
                         ),
+                      if (trabajos.encuenstaTR != null)
+                        buildRatingRow('Encuesta', trabajos.encuenstaTR),
                     ],
                   ),
                 ),
