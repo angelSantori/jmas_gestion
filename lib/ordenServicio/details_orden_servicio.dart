@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jmas_gestion/controllers/entrevista_padron_controller.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
@@ -35,6 +36,8 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   final TipoProblemaController _tipoProblemaController =
       TipoProblemaController();
   final MedioController _medioController = MedioController();
+  final EntrevistaPadronController _entrevistaPadronController =
+      EntrevistaPadronController();
 
   List<TipoProblema> _allTipoProblemas = [];
   List<Medios> _allMedios = [];
@@ -55,6 +58,10 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   bool _isLoadingTrabajos = false;
   String? folioTR;
 
+  //  Entrevista
+  EntrevistaPadron? _entrevista;
+  bool _isLoadingEntrevista = false;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +74,173 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     _loadEvaluacion();
     _loadTrabajosRealizados();
     _loadFolioTR();
+    _loadEntrevista();
+  }
+
+  Future<void> _loadEntrevista() async {
+    setState(() => _isLoadingEntrevista = true);
+    try {
+      final entrevistas = await _entrevistaPadronController.getEPxOS(
+        widget.ordenServicio.idOrdenServicio!,
+      );
+      if (entrevistas.isNotEmpty) {
+        setState(() => _entrevista = entrevistas.first);
+      } else {
+        setState(() => _entrevista = null);
+      }
+    } catch (e) {
+      print('Error al cargar entrevista: $e');
+    } finally {
+      setState(() => _isLoadingEntrevista = false);
+    }
+  }
+
+  Future<void> _showEntrevistaDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final TextEditingController comentarioController = TextEditingController();
+    String? calificacionSeleccionada;
+    final List<String> opcionesCalificacion = [
+      'Muy bueno',
+      'Bueno',
+      'Normal',
+      'Malo',
+      'Muy malo',
+    ];
+
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Registrar Entrevista'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSubmitting)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: CircularProgressIndicator(),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomListaDesplegable(
+                              value: calificacionSeleccionada,
+                              labelText: 'Calificación',
+                              items: opcionesCalificacion,
+                              onChanged: (value) {
+                                setState(() {
+                                  calificacionSeleccionada = value;
+                                });
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Seleccione una calificación';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextFielTexto(
+                        controller: comentarioController,
+                        labelText: 'Comentarios',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingrese un comentario';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo.shade800,
+                  ),
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isSubmitting = true);
+
+                              try {
+                                final entrevista = EntrevistaPadron(
+                                  idEntrevistaPadron: 0,
+                                  comentariosEntrevistaPadron:
+                                      comentarioController.text,
+                                  calificacionEntrevistaPadron:
+                                      calificacionSeleccionada,
+                                  fechaEntrevistaPadron: DateFormat(
+                                    'dd/MM/yyyy HH:mm',
+                                  ).format(DateTime.now()),
+                                  idUser: int.tryParse(idUser!),
+                                  idOrdenServicio:
+                                      widget.ordenServicio.idOrdenServicio,
+                                );
+
+                                final success =
+                                    await _entrevistaPadronController
+                                        .addEntrevistaPadron(entrevista);
+
+                                if (success) {
+                                  Navigator.pop(context);
+                                  showOk(
+                                    context,
+                                    'Entrevista registrada con éxito',
+                                  );
+                                  await _loadEntrevista();
+                                } else {
+                                  Navigator.pop(context);
+                                  showError(
+                                    context,
+                                    'Error al registrar entrevista',
+                                  );
+                                }
+                              } catch (e) {
+                                Navigator.pop(context);
+                                showError(context, 'Error: ${e.toString()}');
+                              }
+                            }
+                          },
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                          : const Text(
+                            'Guardar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<Users?> _loadEvaluadorInfo(int? userId) async {
@@ -299,7 +473,17 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
               const SizedBox(height: 20),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Expanded(flex: 1, child: _buildEvaluacionSection())],
+                children: [
+                  Expanded(flex: 1, child: _buildEvaluacionSection()),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [_buildEntrevistaSection()],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 20),
 
@@ -681,7 +865,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Datos del Evaluador:',
+                'Datos del Evaluador',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1238,5 +1422,120 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
         ],
       );
     }
+  }
+
+  Widget _buildEntrevistaSection() {
+    final entrevistador =
+        _entrevista?.idUser != null
+            ? _allUsers.firstWhere(
+              (user) => user.id_User == _entrevista?.idUser,
+              orElse: () => Users(),
+            )
+            : null;
+
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const Text(
+                  'Entrevista',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo,
+                  ),
+                ),
+                if (widget.ordenServicio.estadoOS == "Cerrada" &&
+                    _entrevista == null)
+                  PermissionWidget(
+                    permission: 'evaluar',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(35),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            blurRadius: 6,
+                            offset: Offset(3, 5),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo.shade800,
+                        ),
+                        onPressed: () => _showEntrevistaDialog(context),
+                        child: const Text(
+                          'Registrar entrevista',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 13),
+            if (_isLoadingEntrevista)
+              Center(
+                child: CircularProgressIndicator(color: Colors.indigo.shade900),
+              )
+            else if (_entrevista != null) ...[
+              const SizedBox(height: 8),
+              _buildInfoRow(
+                'Fecha',
+                _entrevista!.fechaEntrevistaPadron ?? 'N/A',
+              ),
+              const SizedBox(height: 2),
+              _buildInfoRow(
+                'Calificación',
+                _entrevista!.calificacionEntrevistaPadron ?? 'N/A',
+              ),
+              const SizedBox(height: 2),
+              _buildInfoRow(
+                'Comentarios',
+                _entrevista!.comentariosEntrevistaPadron ?? 'N/A',
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Datos del Entrevistador',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (entrevistador != null)
+                _buildInfoRow(
+                  'Usuario',
+                  '${entrevistador.id_User} - ${entrevistador.user_Name} (${entrevistador.user_Contacto ?? 'Sin contacto'})',
+                ),
+            ] else ...[
+              _buildInfoRow('Fecha', 'N/A'),
+              _buildInfoRow('Calificación', 'N/A'),
+              _buildInfoRow('Comentarios', 'N/A'),
+              const SizedBox(height: 8),
+              const Text(
+                'Datos del Entrevistador',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildInfoRow('Usuario', 'N/A'),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
