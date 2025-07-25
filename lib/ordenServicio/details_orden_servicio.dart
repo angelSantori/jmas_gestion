@@ -485,7 +485,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                   ),
                 ],
               ),
-              const SizedBox(width: 20),
+              const SizedBox(height: 20),
 
               _buildTrabajosRealizadosSection(),
             ],
@@ -1442,7 +1442,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   'Entrevista',
@@ -1519,7 +1519,9 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                 ),
             ] else ...[
               _buildInfoRow('Fecha', 'N/A'),
+              const SizedBox(height: 2),
               _buildInfoRow('Calificación', 'N/A'),
+              const SizedBox(height: 2),
               _buildInfoRow('Comentarios', 'N/A'),
               const SizedBox(height: 8),
               const Text(
@@ -1530,7 +1532,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                   color: Colors.indigo,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               _buildInfoRow('Usuario', 'N/A'),
             ],
           ],
