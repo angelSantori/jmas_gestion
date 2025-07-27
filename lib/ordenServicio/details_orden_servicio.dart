@@ -10,7 +10,7 @@ import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/controllers/trabajo_realizado_controller.dart';
 import 'package:jmas_gestion/controllers/users_controller.dart';
-import 'package:jmas_gestion/ordenServicio/widgets_os.dart';
+import 'package:jmas_gestion/ordenServicio/widgets/widgets_os.dart';
 import 'package:jmas_gestion/service/auth_service.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/mensajes.dart';
@@ -1341,7 +1341,8 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                           'ID Salida',
                           trabajos.idSalida?.toString(),
                         ),
-                      if (trabajos.encuenstaTR != null)
+                      if (trabajos.encuenstaTR != null &&
+                          trabajos.fotoRequiereMaterial64TR == null)
                         buildRatingRow('Encuesta', trabajos.encuenstaTR),
                     ],
                   ),
@@ -1350,7 +1351,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                 if (trabajos.fotoAntes64TR != null &&
                     trabajos.fotoAntes64TR!.isNotEmpty &&
                     trabajos.fotoDespues64TR != null &&
-                    trabajos.fotoDespues64TR!.isNotEmpty)
+                    trabajos.fotoDespues64TR!.isNotEmpty) ...[
                   Expanded(
                     flex: 1,
                     child: Row(
@@ -1372,6 +1373,24 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                       ],
                     ),
                   ),
+                ],
+
+                if (trabajos.fotoRequiereMaterial64TR != null &&
+                    trabajos.fotoRequiereMaterial64TR!.isNotEmpty) ...[
+                  Expanded(
+                    flex: 1,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (trabajos.fotoRequiereMaterial64TR != null)
+                          _buildImageFromBase64(
+                            trabajos.fotoRequiereMaterial64TR,
+                            'Evidencia de Requerimiento de Material',
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
