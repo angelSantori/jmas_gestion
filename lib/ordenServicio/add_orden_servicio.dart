@@ -4,6 +4,7 @@ import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
+import 'package:jmas_gestion/ordenServicio/widgets/pdf_os.dart';
 import 'package:jmas_gestion/widgets/buscar_padron.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/generales.dart';
@@ -33,6 +34,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final String _showFecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
   bool _isLoading = false;
+  bool _isGeneratingPDF = false;
 
   String? _selectedPrioridad;
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
@@ -341,12 +343,62 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: ElevatedButton(
                           onPressed:
-                              (_isLoading || _selectedPadron == null)
+                              (_isGeneratingPDF || _isLoading)
                                   ? null
-                                  : _guardarOrdenServicio,
+                                  : () async {
+                                    setState(() {
+                                      _isGeneratingPDF = true;
+                                      _isLoading = true;
+                                    });
+
+                                    try {
+                                      //  Validar campos
+                                      bool datosCompletos = await validarCampos(
+                                        context: context,
+                                        selectedPadron: _selectedPadron,
+                                        selectedTipoProblema:
+                                            _selectedTipoProblema,
+                                        selectedMedio: _selectedMedio,
+                                        selectedPrioridad: _selectedPrioridad,
+                                        contactoController: _contactoCTR,
+                                      );
+
+                                      if (!datosCompletos) {
+                                        return;
+                                      }
+
+                                      await generarPDFOrdenServicio(
+                                        padron: _selectedPadron!,
+                                        tipoProblema: _selectedTipoProblema!,
+                                        medio: _selectedMedio!,
+                                        fechaOS: DateFormat(
+                                          'dd/MM/yyyy HH:mm:ss',
+                                        ).format(DateTime.now()),
+                                        folioOS: _codFolio!,
+                                        idUser: widget.idUser!,
+                                        userName: widget.userName!,
+                                        prioridadOS: _selectedPrioridad!,
+                                      );
+
+                                      await _guardarOrdenServicio();
+                                    } catch (e) {
+                                      showError(
+                                        context,
+                                        'Error al guardar la orden de servicio',
+                                      );
+                                      print(
+                                        'Error al guardar la orden de servicio: $e',
+                                      );
+                                    } finally {
+                                      setState(() {
+                                        _isGeneratingPDF = false;
+                                        _isLoading = false;
+                                      });
+                                    }
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                (_selectedPadron == null)
+                                _isGeneratingPDF
                                     ? Colors.grey
                                     : Colors.indigo.shade900,
                             padding: const EdgeInsets.symmetric(
