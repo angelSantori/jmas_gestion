@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:jmas_gestion/controllers/calles_controller.dart';
+import 'package:jmas_gestion/controllers/colonias_controller.dart';
 import 'package:jmas_gestion/controllers/docs_pdf_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
@@ -21,6 +23,8 @@ Future<bool> validarCampos({
   required var selectedPadron,
   required var selectedTipoProblema,
   required var selectedMedio,
+  required var selectedCalle,
+  required var selectedColonia,
   required TextEditingController contactoController,
   required var selectedPrioridad,
 }) async {
@@ -42,6 +46,14 @@ Future<bool> validarCampos({
   }
   if (selectedPadron == null) {
     showAdvertence(context, 'Debe seleccionar un padrón');
+    return false;
+  }
+  if (selectedCalle == null) {
+    showAdvertence(context, 'Debe seleccionar una calle');
+    return false;
+  }
+  if (selectedColonia == null) {
+    showAdvertence(context, 'Debe seleccionar una colonia');
     return false;
   }
   return true;
@@ -83,7 +95,9 @@ Future<void> generarPDFOrdenServicio({
   required String folioOS,
   required String fechaOS,
   required String prioridadOS,
-  String? comentarios,
+  required String contacto,
+  required Colonias selectedColonia,
+  required Calles selectedCalle,
 }) async {
   try {
     final pdfBytes = await _generatePdfOrdenServicioBytes(
@@ -95,7 +109,9 @@ Future<void> generarPDFOrdenServicio({
       tipoProblema: tipoProblema,
       folioOS: folioOS,
       medio: medio,
-      comentarios: comentarios,
+      contacto: contacto,
+      selectedCalle: selectedCalle,
+      selectedColonia: selectedColonia,
     );
 
     final base64PDF = base64Encode(pdfBytes);
@@ -140,6 +156,9 @@ Future<Uint8List> _generatePdfOrdenServicioBytes({
   required String folioOS,
   required String fechaOS,
   required String prioridadOS,
+  required String contacto,
+  required Calles selectedCalle,
+  required Colonias selectedColonia,
   String? comentarios,
 }) async {
   final pdf = pw.Document();
@@ -291,6 +310,7 @@ Future<Uint8List> _generatePdfOrdenServicioBytes({
 
                 pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                   children: [
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -301,12 +321,24 @@ Future<Uint8List> _generatePdfOrdenServicioBytes({
                           style: normalStyle,
                         ),
                         pw.SizedBox(height: 10),
-
                         pw.Text('Dirección:', style: boldStyle),
                         pw.Text(
                           '${padron.padronDireccion}',
                           style: normalStyle,
                         ),
+                        pw.SizedBox(height: 10),
+                        pw.Text('Contacto:', style: boldStyle),
+                        pw.Text(contacto, style: normalStyle),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('Colonia:', style: boldStyle),
+                        pw.Text('${selectedColonia.nombreColonia}'),
+                        pw.SizedBox(height: 10),
+                        pw.Text('Calle:', style: boldStyle),
+                        pw.Text('${selectedCalle.calleNombre}'),
                       ],
                     ),
                   ],

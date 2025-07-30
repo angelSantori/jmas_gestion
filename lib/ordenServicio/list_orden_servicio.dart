@@ -56,6 +56,7 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
     'Revisión',
     'Devuelta',
     'Cerrada',
+    'Rechazada',
   ];
 
   final List<String> _prioridades = ["Baja", "Media", "Alta"];

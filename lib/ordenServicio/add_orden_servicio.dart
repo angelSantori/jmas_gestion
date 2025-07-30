@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jmas_gestion/controllers/calles_controller.dart';
+import 'package:jmas_gestion/controllers/colonias_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
+import 'package:jmas_gestion/ordenServicio/widgets/buscar_calle_widget.dart';
+import 'package:jmas_gestion/ordenServicio/widgets/buscar_colonia_widget.dart';
 import 'package:jmas_gestion/ordenServicio/widgets/pdf_os.dart';
 import 'package:jmas_gestion/widgets/buscar_padron.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
@@ -23,10 +27,14 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final OrdenServicioController _ordenServicioController =
       OrdenServicioController();
   final PadronController _padronController = PadronController();
+  final CallesController _callesController = CallesController();
+  final ColoniasController _coloniasController = ColoniasController();
 
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _idpadronController = TextEditingController();
+  final TextEditingController _idCalleController = TextEditingController();
+  final TextEditingController _idColoniaController = TextEditingController();
 
   final TextEditingController _contactoCTR = TextEditingController();
 
@@ -40,6 +48,8 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
 
   Padron? _selectedPadron;
+  Calles? _selectedCalle;
+  Colonias? _selectedColonia;
 
   //  Tipo de problema
   final TipoProblemaController _tipoProblemaController =
@@ -81,10 +91,17 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
     // Luego validamos que se haya seleccionado un padrón
     if (_selectedPadron == null) {
       showAdvertence(context, 'Debe seleccionar un padrón');
+      return;
+    }
+    if (_selectedCalle == null) {
+      showAdvertence(context, 'Debe seleccionar una calle');
+      return;
+    }
+    if (_selectedColonia == null) {
+      showAdvertence(context, 'Debe seleccionar una colonia');
       return;
     }
 
@@ -97,6 +114,19 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       );
 
       if (success && mounted) {
+        await generarPDFOrdenServicio(
+          padron: _selectedPadron!,
+          tipoProblema: _selectedTipoProblema!,
+          medio: _selectedMedio!,
+          fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
+          folioOS: _codFolio!,
+          idUser: widget.idUser!,
+          userName: widget.userName!,
+          prioridadOS: _selectedPrioridad!,
+          contacto: _contactoCTR.text,
+          selectedCalle: _selectedCalle!,
+          selectedColonia: _selectedColonia!,
+        );
         showOk(context, 'Orden de servicio registrada exitosamente');
         _limpiarFormulario();
       } else if (mounted) {
@@ -118,12 +148,16 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
     _formKey.currentState?.reset();
     setState(() {
       _idpadronController.clear();
+      _idCalleController.clear();
+      _idColoniaController.clear();
       _contactoCTR.clear();
       _selectedMedio = null;
       _selectedPrioridad = null;
       _selectedTipoProblema = null;
+      _selectedCalle = null;
+      _selectedColonia = null;
       _selectedPadron = null;
-      _loadFolioOT(); // Recargar folio para nueva orden
+      _loadFolioOT();
     });
   }
 
@@ -134,11 +168,13 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
       estadoOS: 'Pendiente',
       prioridadOS: _selectedPrioridad,
-      contactoOS: int.tryParse(_contactoCTR.text),
+      contactoOS: _contactoCTR.text,
       idUser: int.tryParse(widget.idUser!),
       idPadron: _selectedPadron?.idPadron,
       idTipoProblema: _selectedTipoProblema!.idTipoProblema,
       idMedio: _selectedMedio!.idMedio,
+      idCalle: _selectedCalle!.idCalle,
+      idColonia: _selectedColonia!.idColonia,
     );
   }
 
@@ -305,6 +341,29 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 30),
+
+                                  //  Calle
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: BuscarCalleWidget(
+                                          idCalleController: _idCalleController,
+                                          callesController: _callesController,
+                                          selectedCalle: _selectedCalle,
+                                          onCalleSeleccionada: (calle) {
+                                            setState(
+                                              () => _selectedCalle = calle,
+                                            );
+                                          },
+                                          onAdvertencia: (message) {
+                                            showAdvertence(context, message);
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 20),
                                 ],
                               ),
                             ),
@@ -313,18 +372,46 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                             // Columna derecha (padrón)
                             Expanded(
                               flex: 2,
-                              child: BuscarPadronWidgetSalida(
-                                idPadronController: _idpadronController,
-                                padronController: _padronController,
-                                selectedPadron: _selectedPadron,
-                                onPadronSeleccionado: (padron) {
-                                  setState(() {
-                                    _selectedPadron = padron;
-                                  });
-                                },
-                                onAdvertencia: (p0) {
-                                  showAdvertence(context, p0);
-                                },
+                              child: Column(
+                                children: [
+                                  BuscarPadronWidgetSalida(
+                                    idPadronController: _idpadronController,
+                                    padronController: _padronController,
+                                    selectedPadron: _selectedPadron,
+                                    onPadronSeleccionado: (padron) {
+                                      setState(() {
+                                        _selectedPadron = padron;
+                                      });
+                                    },
+                                    onAdvertencia: (p0) {
+                                      showAdvertence(context, p0);
+                                    },
+                                  ),
+                                  const SizedBox(height: 30),
+
+                                  //  Colonia
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: BuscarColoniaWidget(
+                                          idColoniaController:
+                                              _idColoniaController,
+                                          coloniasController:
+                                              _coloniasController,
+                                          selectedColonia: _selectedColonia,
+                                          onColoniaSeleccionada: (colonia) {
+                                            setState(
+                                              () => _selectedColonia = colonia,
+                                            );
+                                          },
+                                          onAdvertencia: (message) {
+                                            showAdvertence(context, message);
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -360,26 +447,14 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                             _selectedTipoProblema,
                                         selectedMedio: _selectedMedio,
                                         selectedPrioridad: _selectedPrioridad,
+                                        selectedCalle: _selectedCalle,
+                                        selectedColonia: _selectedColonia,
                                         contactoController: _contactoCTR,
                                       );
 
                                       if (!datosCompletos) {
                                         return;
                                       }
-
-                                      await generarPDFOrdenServicio(
-                                        padron: _selectedPadron!,
-                                        tipoProblema: _selectedTipoProblema!,
-                                        medio: _selectedMedio!,
-                                        fechaOS: DateFormat(
-                                          'dd/MM/yyyy HH:mm:ss',
-                                        ).format(DateTime.now()),
-                                        folioOS: _codFolio!,
-                                        idUser: widget.idUser!,
-                                        userName: widget.userName!,
-                                        prioridadOS: _selectedPrioridad!,
-                                      );
-
                                       await _guardarOrdenServicio();
                                     } catch (e) {
                                       showError(

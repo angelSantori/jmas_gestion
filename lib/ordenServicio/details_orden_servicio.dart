@@ -2,6 +2,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jmas_gestion/controllers/calles_controller.dart';
+import 'package:jmas_gestion/controllers/colonias_controller.dart';
 import 'package:jmas_gestion/controllers/entrevista_padron_controller.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
@@ -38,9 +40,13 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   final MedioController _medioController = MedioController();
   final EntrevistaPadronController _entrevistaPadronController =
       EntrevistaPadronController();
+  final CallesController _callesController = CallesController();
+  final ColoniasController _coloniasController = ColoniasController();
 
   List<TipoProblema> _allTipoProblemas = [];
   List<Medios> _allMedios = [];
+  List<Calles> _allCalles = [];
+  List<Colonias> _allColonias = [];
 
   Padron? _padron;
   TipoProblema? _problema;
@@ -68,8 +74,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     _loadAllUsers();
     _loadPadronInfo();
     _loadProblemaInfo();
-    _loadTipoProblema();
-    _loadMedios();
+    _loadData();
     _getUserId();
     _loadEvaluacion();
     _loadTrabajosRealizados();
@@ -263,19 +268,21 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     }
   }
 
-  Future<void> _loadTipoProblema() async {
+  Future<void> _loadData() async {
     try {
-      _allTipoProblemas = await _tipoProblemaController.listTipoProblema();
+      final tipoProblemas = await _tipoProblemaController.listTipoProblema();
+      final medios = await _medioController.listMedios();
+      final colonias = await _coloniasController.listColonias();
+      final calles = await _callesController.listCalles();
+
+      setState(() {
+        _allTipoProblemas = tipoProblemas;
+        _allMedios = medios;
+        _allColonias = colonias;
+        _allCalles = calles;
+      });
     } catch (e) {
       print('Error _loadData | DetailsOrdenTRabajo: $e');
-    }
-  }
-
-  Future<void> _loadMedios() async {
-    try {
-      _allMedios = await _medioController.listMedios();
-    } catch (e) {
-      print('Error _loadMedios | DetailsOrdenTRabajo: $e');
     }
   }
 
@@ -508,6 +515,16 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
       orElse: () => Medios(),
     );
 
+    final selectedColonia = _allColonias.firstWhere(
+      (colonia) => colonia.idColonia == widget.ordenServicio.idColonia,
+      orElse: () => Colonias(),
+    );
+
+    final selectedCalle = _allCalles.firstWhere(
+      (calle) => calle.idCalle == widget.ordenServicio.idCalle,
+      orElse: () => Calles(),
+    );
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -540,8 +557,12 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
             const Divider(),
             _buildInfoRow(
               'Contacto',
-              '${widget.ordenServicio.contactoOS ?? 'Sin contacto'}',
+              widget.ordenServicio.contactoOS ?? 'Sin contacto',
             ),
+            const Divider(),
+            _buildInfoRow('Colonia', selectedColonia.nombreColonia ?? 'N/D'),
+            const Divider(),
+            _buildInfoRow('Calle', selectedCalle.calleNombre ?? 'N/D'),
           ],
         ),
       ),
@@ -844,6 +865,33 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                           ),
                         ),
                       ),
+                    if (widget.ordenServicio.estadoOS == 'Devuelta') ...[
+                      PermissionWidget(
+                        permission: 'evaluar',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(35),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey,
+                                blurRadius: 6,
+                                offset: Offset(3, 5),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.shade800,
+                            ),
+                            onPressed: () => _showReasignarDialog(context),
+                            child: Text(
+                              'Reasignar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -1132,7 +1180,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                             child: CustomListaDesplegable(
                               value: estadoSeleccionado,
                               labelText: 'Estado',
-                              items: ['Cerrar', 'Devolver'],
+                              items: ['Cerrar', 'Devolver', 'Aprobar Material'],
                               onChanged: (value) {
                                 estadoSeleccionado = value;
                               },
@@ -1182,7 +1230,9 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                                 final nuevoEstado =
                                     estadoSeleccionado == 'Cerrar'
                                         ? 'Cerrada'
-                                        : 'Devuelta';
+                                        : estadoSeleccionado == 'Devolver'
+                                        ? 'Devuelta'
+                                        : 'Aprobada - S/A';
 
                                 final ordenActualizada = widget.ordenServicio
                                     .copyWith(estadoOS: nuevoEstado);
@@ -1557,6 +1607,176 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showReasignarDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final TextEditingController comentarioController = TextEditingController();
+    final OrdenServicioController ordenServicioController =
+        OrdenServicioController();
+
+    bool isSubmitting = false;
+
+    // Filtrar solo empleados
+    List<Users> empleados =
+        _allUsers.where((user) => user.user_Rol == "Empleado").toList();
+    Users? empleadoSeleccionado;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Reasignar Tarea'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSubmitting)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: CircularProgressIndicator(),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomListaDesplegableTipo<Users>(
+                              value: empleadoSeleccionado,
+                              labelText: 'Seleccionar Empleado',
+                              items: empleados,
+                              onChanged: (Users? newValue) {
+                                setState(() {
+                                  empleadoSeleccionado = newValue;
+                                });
+                              },
+                              itemLabelBuilder:
+                                  (empleado) =>
+                                      '${empleado.user_Name ?? 'Sin nombre'} - (${empleado.id_User})',
+                              validator: (value) {
+                                if (value == null) {
+                                  return 'Seleccione un empleado';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextFielTexto(
+                        controller: comentarioController,
+                        labelText: 'Comentarios',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingrese un comentario';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade800,
+                  ),
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isSubmitting = true);
+
+                              try {
+                                // Actualizar estado a "Pendiente" para que pueda ser reasignada
+                                final ordenActualizada = widget.ordenServicio
+                                    .copyWith(estadoOS: 'Aprobada - A');
+
+                                // Crear nueva evaluación para registrar la reasignación
+                                final evaluacion = EvaluacionOS(
+                                  idEvaluacionOrdenServicio: 0,
+                                  fechaEOS: DateFormat(
+                                    'dd/MM/yyyy HH:mm',
+                                  ).format(DateTime.now()),
+                                  comentariosEOS: comentarioController.text,
+                                  estadoEnviadoEOS: 'Reasignada',
+                                  idUser: int.tryParse(idUser!),
+                                  idOrdenServicio:
+                                      widget.ordenServicio.idOrdenServicio,
+                                );
+
+                                // Si no requiere material, crear trabajo realizado con el nuevo empleado
+                                bool successTrabajo = true;
+                                if (widget.ordenServicio.materialOS != true &&
+                                    empleadoSeleccionado != null) {
+                                  _selectedEmpleado = empleadoSeleccionado;
+                                  successTrabajo = await _crearTrabajo();
+                                }
+
+                                // Enviar cambios al servidor
+                                final successEvaluacion =
+                                    await _evaluacionOrdenServicioController
+                                        .addEvOS(evaluacion);
+                                final successOrden =
+                                    await ordenServicioController
+                                        .editOrdenServicio(ordenActualizada);
+
+                                if (successEvaluacion &&
+                                    successOrden &&
+                                    successTrabajo) {
+                                  Navigator.pop(context);
+                                  showOk(context, 'Tarea reasignada con éxito');
+                                  setState(() {
+                                    widget.ordenServicio.estadoOS =
+                                        'Aprobada - A';
+                                  });
+                                  await _loadEvaluacion();
+                                  await _loadTrabajosRealizados();
+                                  Navigator.pop(context, true);
+                                } else {
+                                  Navigator.pop(context);
+                                  showError(
+                                    context,
+                                    'Error al reasignar tarea',
+                                  );
+                                }
+                              } catch (e) {
+                                Navigator.pop(context);
+                                showError(context, 'Error: ${e.toString()}');
+                              }
+                            }
+                          },
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                          : const Text(
+                            'Reasignar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
