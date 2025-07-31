@@ -540,29 +540,30 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                 color: Colors.indigo,
               ),
             ),
+            const Divider(),
             const SizedBox(height: 10),
             _buildInfoRow('Folio', widget.ordenServicio.folioOS),
-            const Divider(),
             _buildInfoRow('Fecha', formatDate(widget.ordenServicio.fechaOS)),
-            const Divider(),
             _buildInfoRow(
               'Medio',
               '${medioSL.nombreMedio ?? 'Sin Nombre'} - (${medioSL.idMedio})',
             ),
-            const Divider(),
             _buildInfoRow(
               'Tipo de Problema',
               '${tipoProblema.nombreTP ?? 'Sin Nombre'} - (${tipoProblema.idTipoProblema})',
             ),
-            const Divider(),
             _buildInfoRow(
               'Contacto',
               widget.ordenServicio.contactoOS ?? 'Sin contacto',
             ),
-            const Divider(),
-            _buildInfoRow('Colonia', selectedColonia.nombreColonia ?? 'N/D'),
-            const Divider(),
-            _buildInfoRow('Calle', selectedCalle.calleNombre ?? 'N/D'),
+            _buildInfoRow(
+              'Colonia',
+              '${selectedColonia.nombreColonia ?? 'N/D'} - (${selectedColonia.idColonia})',
+            ),
+            _buildInfoRow(
+              'Calle',
+              '${selectedCalle.calleNombre ?? 'N/D'} - (${selectedCalle.idCalle})',
+            ),
           ],
         ),
       ),
@@ -1060,7 +1061,11 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                                         : 'Rechazada';
 
                                 final ordenActualizada = widget.ordenServicio
-                                    .copyWith(estadoOS: nuevoEstado);
+                                    .copyWith(
+                                      estadoOS: nuevoEstado,
+                                      idUserAsignado:
+                                          _selectedEmpleado!.id_User,
+                                    );
 
                                 // Crear objeto de evaluación
                                 final evaluacion = EvaluacionOS(
@@ -1232,7 +1237,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                                         ? 'Cerrada'
                                         : estadoSeleccionado == 'Devolver'
                                         ? 'Devuelta'
-                                        : 'Aprobada - S/A';
+                                        : 'Requiere Material';
 
                                 final ordenActualizada = widget.ordenServicio
                                     .copyWith(estadoOS: nuevoEstado);
@@ -1386,10 +1391,10 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                         _buildInfoRowCords('Ubicación', trabajos.ubicacionTR),
                       if (trabajos.comentarioTR != null)
                         _buildInfoRow('Comentario', trabajos.comentarioTR),
-                      if (trabajos.idSalida != null)
+                      if (trabajos.folioSalida != null)
                         _buildInfoRow(
                           'ID Salida',
-                          trabajos.idSalida?.toString(),
+                          trabajos.folioSalida?.toString(),
                         ),
                       if (trabajos.encuenstaTR != null &&
                           trabajos.fotoRequiereMaterial64TR == null)

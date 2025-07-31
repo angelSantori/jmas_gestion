@@ -26,7 +26,7 @@ Color getEstadoColor(String? estado) {
   switch (estado.toLowerCase()) {
     case 'pendiente':
       return Colors.orange;
-    case 'aprobada - s/a':
+    case 'requiere material':
       return Colors.green;
     case 'aprobada - a':
       return Colors.green.shade900;
