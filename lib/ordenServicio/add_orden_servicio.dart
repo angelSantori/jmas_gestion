@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jmas_gestion/controllers/calles_controller.dart';
-import 'package:jmas_gestion/controllers/colonias_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
-import 'package:jmas_gestion/ordenServicio/widgets/buscar_calle_widget.dart';
-import 'package:jmas_gestion/ordenServicio/widgets/buscar_colonia_widget.dart';
 import 'package:jmas_gestion/ordenServicio/widgets/pdf_os.dart';
 import 'package:jmas_gestion/widgets/buscar_padron.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
@@ -27,8 +23,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final OrdenServicioController _ordenServicioController =
       OrdenServicioController();
   final PadronController _padronController = PadronController();
-  final CallesController _callesController = CallesController();
-  final ColoniasController _coloniasController = ColoniasController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -37,6 +31,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final TextEditingController _idColoniaController = TextEditingController();
 
   final TextEditingController _contactoCTR = TextEditingController();
+  final TextEditingController _comentarioOS = TextEditingController();
 
   String? _codFolio;
   final String _showFecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
@@ -48,8 +43,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
 
   Padron? _selectedPadron;
-  Calles? _selectedCalle;
-  Colonias? _selectedColonia;
 
   //  Tipo de problema
   final TipoProblemaController _tipoProblemaController =
@@ -96,15 +89,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       showAdvertence(context, 'Debe seleccionar un padrón');
       return;
     }
-    if (_selectedCalle == null) {
-      showAdvertence(context, 'Debe seleccionar una calle');
-      return;
-    }
-    if (_selectedColonia == null) {
-      showAdvertence(context, 'Debe seleccionar una colonia');
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
@@ -124,8 +108,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
           userName: widget.userName!,
           prioridadOS: _selectedPrioridad!,
           contacto: _contactoCTR.text,
-          selectedCalle: _selectedCalle!,
-          selectedColonia: _selectedColonia!,
+          comentario: _comentarioOS.text.isNotEmpty ? _comentarioOS.text : null,
         );
         showOk(context, 'Orden de servicio registrada exitosamente');
         _limpiarFormulario();
@@ -154,8 +137,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       _selectedMedio = null;
       _selectedPrioridad = null;
       _selectedTipoProblema = null;
-      _selectedCalle = null;
-      _selectedColonia = null;
+      _comentarioOS.clear();
       _selectedPadron = null;
       _loadFolioOT();
     });
@@ -173,8 +155,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       idPadron: _selectedPadron?.idPadron,
       idTipoProblema: _selectedTipoProblema!.idTipoProblema,
       idMedio: _selectedMedio!.idMedio,
-      idCalle: _selectedCalle!.idCalle,
-      idColonia: _selectedColonia!.idColonia,
+      comentarioOS: _comentarioOS.text,
     );
   }
 
@@ -279,7 +260,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                           TipoProblema
                                         >(
                                           value: _selectedTipoProblema,
-                                          labelText: 'Tipo de Problema',
+                                          labelText: 'Tipo de Servicio',
                                           items: _allProblemas,
                                           onChanged: (problema) {
                                             setState(() {
@@ -288,7 +269,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                           },
                                           validator: (problema) {
                                             if (problema == null) {
-                                              return 'Debe seleccionar un tipo de problema';
+                                              return 'Debe seleccionar un tipo de servicio';
                                             }
                                             return null;
                                           },
@@ -330,40 +311,24 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                           controller: _contactoCTR,
                                           labelText: 'Contacto',
                                           prefixIcon: Icons.phone,
-                                          validator: (contacto) {
-                                            if (contacto == null ||
-                                                contacto.isEmpty) {
-                                              return 'Contacto obligatorio';
-                                            }
-                                            return null;
-                                          },
                                         ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 30),
 
-                                  //  Calle
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: BuscarCalleWidget(
-                                          idCalleController: _idCalleController,
-                                          callesController: _callesController,
-                                          selectedCalle: _selectedCalle,
-                                          onCalleSeleccionada: (calle) {
-                                            setState(
-                                              () => _selectedCalle = calle,
-                                            );
-                                          },
-                                          onAdvertencia: (message) {
-                                            showAdvertence(context, message);
-                                          },
+                                        child: CustomTextFielTexto(
+                                          controller: _comentarioOS,
+                                          labelText: 'Comentario (Opcional)',
+                                          prefixIcon: Icons.comment,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 20),
+                                  const SizedBox(height: 30),
                                 ],
                               ),
                             ),
@@ -388,29 +353,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                     },
                                   ),
                                   const SizedBox(height: 30),
-
-                                  //  Colonia
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: BuscarColoniaWidget(
-                                          idColoniaController:
-                                              _idColoniaController,
-                                          coloniasController:
-                                              _coloniasController,
-                                          selectedColonia: _selectedColonia,
-                                          onColoniaSeleccionada: (colonia) {
-                                            setState(
-                                              () => _selectedColonia = colonia,
-                                            );
-                                          },
-                                          onAdvertencia: (message) {
-                                            showAdvertence(context, message);
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ],
                               ),
                             ),
@@ -447,9 +389,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                                             _selectedTipoProblema,
                                         selectedMedio: _selectedMedio,
                                         selectedPrioridad: _selectedPrioridad,
-                                        selectedCalle: _selectedCalle,
-                                        selectedColonia: _selectedColonia,
-                                        contactoController: _contactoCTR,
                                       );
 
                                       if (!datosCompletos) {
