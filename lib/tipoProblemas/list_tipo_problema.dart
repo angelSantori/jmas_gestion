@@ -74,7 +74,7 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
       builder:
           (context) => AlertDialog(
             title: const Text(
-              'Agregar Tipo de Problema',
+              'Agregar Tipo de Servicio',
               textAlign: TextAlign.center,
             ),
             content: Form(
@@ -84,10 +84,10 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
                 children: [
                   CustomTextFielTexto(
                     controller: nombreController,
-                    labelText: 'Nombre del problema',
+                    labelText: 'Nombre del servicio',
                     validator: (problema) {
                       if (problema == null || problema.isEmpty) {
-                        return 'Nombre del problema obligatorio';
+                        return 'Nombre del servicio obligatorio';
                       }
                       return null;
                     },
@@ -145,7 +145,7 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
       builder:
           (context) => AlertDialog(
             title: const Text(
-              'Editar Tipo de Problema',
+              'Editar Tipo de Servicio',
               textAlign: TextAlign.center,
             ),
             content: Form(
@@ -155,10 +155,10 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
                 children: [
                   CustomTextFielTexto(
                     controller: nombreController,
-                    labelText: 'Nombre del problema',
+                    labelText: 'Nombre del Servicio',
                     validator: (problema) {
                       if (problema == null || problema.isEmpty) {
-                        return 'Nombre del tipo de problema obligatorio';
+                        return 'Nombre del tipo de servicio obligatorio';
                       }
                       return null;
                     },
@@ -204,10 +204,10 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
       );
 
       if (success) {
-        showOk(context, 'Tipo de problema actualizado correctamente');
+        showOk(context, 'Tipo de Servicio actualizado correctamente');
         _loadTipoProblemas();
       } else {
-        showError(context, 'Error al actualizar el tipo de problema');
+        showError(context, 'Error al actualizar el tipo de Servicio');
       }
     }
   }
@@ -217,7 +217,7 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Lista Tipo de Problemas',
+          'Lista Tipo de Servicios',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -242,7 +242,7 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: CustomTextFielTexto(
                 controller: _searchController,
-                labelText: 'Buscar Tipo de Problema',
+                labelText: 'Buscar Tipo de Servicio',
                 prefixIcon: Icons.search,
               ),
             ),
@@ -259,7 +259,7 @@ class _ListTipoProblemaState extends State<ListTipoProblema> {
                       : _filteredProblemas.isEmpty
                       ? const Center(
                         child: Text(
-                          'No hay algún tipo de problemas que coincidan con la búsqueda',
+                          'No hay algún tipo de servicios que coincidan con la búsqueda',
                         ),
                       )
                       : ListView.separated(
