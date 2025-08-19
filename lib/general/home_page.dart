@@ -281,7 +281,7 @@ class _HomePageState extends State<HomePage>
                             onTap: () => _navigateTo('listOrdenServicio'),
                           ),
                           CustomListTile(
-                            title: 'Tipo de Problemas',
+                            title: 'Tipo de Servicios',
                             icon: Icon(
                               Icons.tour_outlined,
                               color: Colors.white,
