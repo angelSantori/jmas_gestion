@@ -4,8 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:jmas_gestion/controllers/calles_controller.dart';
-import 'package:jmas_gestion/controllers/colonias_controller.dart';
 import 'package:jmas_gestion/controllers/docs_pdf_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
@@ -23,9 +21,6 @@ Future<bool> validarCampos({
   required var selectedPadron,
   required var selectedTipoProblema,
   required var selectedMedio,
-  required var selectedCalle,
-  required var selectedColonia,
-  required TextEditingController contactoController,
   required var selectedPrioridad,
 }) async {
   if (selectedMedio == null) {
@@ -33,27 +28,15 @@ Future<bool> validarCampos({
     return false;
   }
   if (selectedTipoProblema == null) {
-    showAdvertence(context, 'Debe seleccionar un tipo de problema');
+    showAdvertence(context, 'Debe seleccionar un tipo de servicio');
     return false;
   }
   if (selectedPrioridad == null) {
     showAdvertence(context, 'Debe seleccionar una prioridad');
     return false;
   }
-  if (contactoController.text.isEmpty) {
-    showAdvertence(context, 'Debe agregar un contacto');
-    return false;
-  }
   if (selectedPadron == null) {
     showAdvertence(context, 'Debe seleccionar un padrón');
-    return false;
-  }
-  if (selectedCalle == null) {
-    showAdvertence(context, 'Debe seleccionar una calle');
-    return false;
-  }
-  if (selectedColonia == null) {
-    showAdvertence(context, 'Debe seleccionar una colonia');
     return false;
   }
   return true;
@@ -95,9 +78,8 @@ Future<void> generarPDFOrdenServicio({
   required String folioOS,
   required String fechaOS,
   required String prioridadOS,
-  required String contacto,
-  required Colonias selectedColonia,
-  required Calles selectedCalle,
+  String? contacto,
+  String? comentario,
 }) async {
   try {
     final pdfBytes = await _generatePdfOrdenServicioBytes(
@@ -110,8 +92,7 @@ Future<void> generarPDFOrdenServicio({
       folioOS: folioOS,
       medio: medio,
       contacto: contacto,
-      selectedCalle: selectedCalle,
-      selectedColonia: selectedColonia,
+      comentarios: comentario,
     );
 
     final base64PDF = base64Encode(pdfBytes);
@@ -156,9 +137,7 @@ Future<Uint8List> _generatePdfOrdenServicioBytes({
   required String folioOS,
   required String fechaOS,
   required String prioridadOS,
-  required String contacto,
-  required Calles selectedCalle,
-  required Colonias selectedColonia,
+  String? contacto,
   String? comentarios,
 }) async {
   final pdf = pw.Document();
@@ -326,19 +305,11 @@ Future<Uint8List> _generatePdfOrdenServicioBytes({
                           '${padron.padronDireccion}',
                           style: normalStyle,
                         ),
-                        pw.SizedBox(height: 10),
-                        pw.Text('Contacto:', style: boldStyle),
-                        pw.Text(contacto, style: normalStyle),
-                      ],
-                    ),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text('Colonia:', style: boldStyle),
-                        pw.Text('${selectedColonia.nombreColonia}'),
-                        pw.SizedBox(height: 10),
-                        pw.Text('Calle:', style: boldStyle),
-                        pw.Text('${selectedCalle.calleNombre}'),
+                        if (contacto!.isNotEmpty) ...[
+                          pw.SizedBox(height: 10),
+                          pw.Text('Contacto:', style: boldStyle),
+                          pw.Text(contacto, style: normalStyle),
+                        ],
                       ],
                     ),
                   ],
@@ -350,7 +321,7 @@ Future<Uint8List> _generatePdfOrdenServicioBytes({
 
                 // Descripción del problema
                 if (comentarios != null) ...[
-                  pw.Text('DESCRIPCIÓN DEL PROBLEMA', style: titleStyle),
+                  pw.Text('COMENTARIO', style: titleStyle),
                   pw.SizedBox(height: 10),
 
                   if (comentarios.isNotEmpty)
