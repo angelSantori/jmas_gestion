@@ -2,8 +2,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jmas_gestion/controllers/calles_controller.dart';
-import 'package:jmas_gestion/controllers/colonias_controller.dart';
 import 'package:jmas_gestion/controllers/entrevista_padron_controller.dart';
 import 'package:jmas_gestion/controllers/evaluacion_orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/medio_controller.dart';
@@ -40,13 +38,9 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
   final MedioController _medioController = MedioController();
   final EntrevistaPadronController _entrevistaPadronController =
       EntrevistaPadronController();
-  final CallesController _callesController = CallesController();
-  final ColoniasController _coloniasController = ColoniasController();
 
   List<TipoProblema> _allTipoProblemas = [];
   List<Medios> _allMedios = [];
-  List<Calles> _allCalles = [];
-  List<Colonias> _allColonias = [];
 
   Padron? _padron;
   TipoProblema? _problema;
@@ -272,14 +266,10 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     try {
       final tipoProblemas = await _tipoProblemaController.listTipoProblema();
       final medios = await _medioController.listMedios();
-      final colonias = await _coloniasController.listColonias();
-      final calles = await _callesController.listCalles();
 
       setState(() {
         _allTipoProblemas = tipoProblemas;
         _allMedios = medios;
-        _allColonias = colonias;
-        _allCalles = calles;
       });
     } catch (e) {
       print('Error _loadData | DetailsOrdenTRabajo: $e');
@@ -515,16 +505,6 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
       orElse: () => Medios(),
     );
 
-    final selectedColonia = _allColonias.firstWhere(
-      (colonia) => colonia.idColonia == widget.ordenServicio.idColonia,
-      orElse: () => Colonias(),
-    );
-
-    final selectedCalle = _allCalles.firstWhere(
-      (calle) => calle.idCalle == widget.ordenServicio.idCalle,
-      orElse: () => Calles(),
-    );
-
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -557,12 +537,8 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
               widget.ordenServicio.contactoOS ?? 'Sin contacto',
             ),
             _buildInfoRow(
-              'Colonia',
-              '${selectedColonia.nombreColonia ?? 'N/D'} - (${selectedColonia.idColonia})',
-            ),
-            _buildInfoRow(
-              'Calle',
-              '${selectedCalle.calleNombre ?? 'N/D'} - (${selectedCalle.idCalle})',
+              'Comentaio',
+              widget.ordenServicio.comentarioOS ?? 'Sin comentario',
             ),
           ],
         ),
