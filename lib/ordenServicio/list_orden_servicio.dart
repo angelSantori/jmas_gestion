@@ -5,9 +5,10 @@ import 'package:jmas_gestion/controllers/orden_servicio_controller.dart';
 import 'package:jmas_gestion/controllers/padron_controller.dart';
 import 'package:jmas_gestion/controllers/tipo_problema_controller.dart';
 import 'package:jmas_gestion/ordenServicio/details_orden_servicio.dart';
+import 'package:jmas_gestion/ordenServicio/widgets/card_custom.dart';
+import 'package:jmas_gestion/ordenServicio/widgets/ordenes_pdf.dart';
 import 'package:jmas_gestion/widgets/formularios.dart';
 import 'package:jmas_gestion/widgets/mensajes.dart';
-import 'package:jmas_gestion/widgets/widgets_detailOT.dart';
 
 class ListOrdenServicio extends StatefulWidget {
   const ListOrdenServicio({super.key});
@@ -57,9 +58,12 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
     'Devuelta',
     'Cerrada',
     'Rechazada',
+    'Cancelada',
   ];
 
   final List<String> _prioridades = ["Baja", "Media", "Alta"];
+
+  bool _mostrarCanceladas = false;
 
   @override
   void initState() {
@@ -121,6 +125,11 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
     setState(() {
       _filteredOrdenesServicios =
           _ordenServicios.where((orden) {
+            // Si no queremos mostrar canceladas y la orden está cancelada, la excluimos
+            if (!_mostrarCanceladas && orden.estadoOS == 'Cancelada') {
+              return false;
+            }
+
             // Filtro por folio
             if (query.isNotEmpty &&
                 !(orden.folioOS ?? '').toLowerCase().contains(query)) {
@@ -254,6 +263,213 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
     }
   }
 
+  Future<void> _mostrarDialogoReporte() async {
+    DateTimeRange? rangoSeleccionado;
+    TipoProblema? tipoProblemaSeleccionado;
+
+    // Función para mostrar el diálogo
+    void mostrarDialogo() {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('Generar Reporte PDF'),
+                content: SizedBox(
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Selector de rango de fechas
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final DateTimeRange? picked =
+                                    await showDateRangePicker(
+                                      context: context,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime.now(),
+                                    );
+                                if (picked != null) {
+                                  setStateDialog(() {
+                                    rangoSeleccionado = picked;
+                                  });
+                                }
+                              },
+                              child: Text(
+                                rangoSeleccionado == null
+                                    ? 'Seleccionar rango de fechas'
+                                    : '${DateFormat('dd/MM/yyyy').format(rangoSeleccionado!.start)} - ${DateFormat('dd/MM/yyyy').format(rangoSeleccionado!.end)}',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Selector de tipo de problema
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomListaDesplegableTipo<TipoProblema>(
+                              value: tipoProblemaSeleccionado,
+                              labelText: 'Tipo de Servicio (opcional)',
+                              items: _allTipoProblemas,
+                              onChanged: (TipoProblema? newValue) {
+                                setStateDialog(() {
+                                  tipoProblemaSeleccionado = newValue;
+                                });
+                              },
+                              itemLabelBuilder:
+                                  (tp) =>
+                                      '${tp.nombreTP ?? 'N/A'} - ${tp.idTipoProblema}',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (rangoSeleccionado == null) {
+                        showAdvertence(
+                          context,
+                          'Debe seleccionar un rango de fechas',
+                        );
+                        return;
+                      }
+
+                      Navigator.of(context).pop();
+                      await _generarReportePDF(
+                        rangoSeleccionado!,
+                        tipoProblemaSeleccionado,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade900,
+                    ),
+                    child: const Text(
+                      'Generar PDF',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+
+    // Mostrar el diálogo inicial
+    mostrarDialogo();
+  }
+
+  Future<void> _generarReportePDF(
+    DateTimeRange rangoFechas,
+    TipoProblema? tipoProblema,
+  ) async {
+    try {
+      setState(() => _isLoading = true);
+
+      // Filtrar órdenes según el rango de fechas y tipo de problema
+      final ordenesFiltradas =
+          _ordenServicios.where((orden) {
+            if (orden.estadoOS == 'Cancelada') return false;
+            if (orden.fechaOS == null) return false;
+
+            try {
+              // Parsear la fecha de la orden
+              final parts = orden.fechaOS!.split(' ');
+              final dateParts = parts[0].split('/');
+              final timeParts = parts[1].split(':');
+
+              final fechaOrden = DateTime(
+                int.parse(dateParts[2]),
+                int.parse(dateParts[1]),
+                int.parse(dateParts[0]),
+                int.parse(timeParts[0]),
+                int.parse(timeParts[1]),
+              );
+
+              // Ajustar el rango de fechas
+              final startDate = DateTime(
+                rangoFechas.start.year,
+                rangoFechas.start.month,
+                rangoFechas.start.day,
+              );
+
+              final endDate = DateTime(
+                rangoFechas.end.year,
+                rangoFechas.end.month,
+                rangoFechas.end.day,
+                23,
+                59,
+                59,
+              );
+
+              // Verificar si está en el rango y coincide con el tipo de problema
+              final enRango =
+                  fechaOrden.isAfter(startDate) && fechaOrden.isBefore(endDate);
+              final coincideTipo =
+                  tipoProblema == null ||
+                  orden.idTipoProblema == tipoProblema.idTipoProblema;
+
+              return enRango && coincideTipo;
+            } catch (e) {
+              print('Error al parsear fecha: ${orden.fechaOS} - $e');
+              return false;
+            }
+          }).toList();
+
+      if (ordenesFiltradas.isEmpty) {
+        showAdvertence(
+          context,
+          'No hay órdenes que coincidan con los filtros seleccionados',
+        );
+        return;
+      }
+
+      // Generar el PDF
+      final pdfBytes = await OrdenesPDF.generarPDFMultiplesOrdenes(
+        ordenes: ordenesFiltradas,
+        medios: _allMedios,
+        tiposProblema: _allTipoProblemas,
+        padrones: _allPadrones,
+        rangoFechas: rangoFechas,
+        tipoProblemaFiltro: tipoProblema,
+      );
+
+      // Descargar el PDF
+      final fechaActual = DateFormat('ddMMyyyy_HHmmss').format(DateTime.now());
+      final nombreArchivo = 'Reporte_Ordenes_Servicio_$fechaActual.pdf';
+
+      await OrdenesPDF.descargarPDF(
+        pdfBytes: pdfBytes,
+        fileName: nombreArchivo,
+      );
+
+      showOk(context, 'Reporte generado exitosamente');
+    } catch (e) {
+      print('Error al generar reporte PDF: $e');
+      showAdvertence(context, 'Error al generar el reporte PDF');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,6 +480,22 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
         ),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          IconButton(
+            icon: Icon(
+              _mostrarCanceladas ? Icons.visibility_off : Icons.visibility,
+              color: _mostrarCanceladas ? Colors.red : Colors.white,
+            ),
+            tooltip:
+                _mostrarCanceladas
+                    ? 'Ocultar canceladas'
+                    : 'Mostrar canceladas',
+            onPressed: () {
+              setState(() {
+                _mostrarCanceladas = !_mostrarCanceladas;
+                _applyFilters();
+              });
+            },
+          ),
           if (_searchFolio.isNotEmpty ||
               _selectedEstado != null ||
               _selectedPrioridad != null ||
@@ -281,6 +513,13 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
         elevation: 2,
         backgroundColor: Colors.indigo.shade800,
         foregroundColor: Colors.white,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _mostrarDialogoReporte,
+        backgroundColor: Colors.red.shade900,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.picture_as_pdf),
+        tooltip: 'Generar reporte PDF',
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -469,7 +708,7 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
                                         _selectedTipoProblema,
                                   )
                                   : null,
-                          labelText: 'Tipo Problema',
+                          labelText: 'Tipo Servicio',
                           items: _allTipoProblemas,
                           onChanged: (TipoProblema? newProblema) {
                             setState(() {
@@ -516,11 +755,20 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
                           'No hay órdenes que coincidan con los filtros',
                         ),
                       )
-                      : ListView.separated(
+                      : GridView.builder(
                         padding: const EdgeInsets.all(8),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              MediaQuery.of(context).size.width > 1200
+                                  ? 4
+                                  : MediaQuery.of(context).size.width > 800
+                                  ? 3
+                                  : 2,
+                          crossAxisSpacing: 20,
+                          mainAxisSpacing: 20,
+                          childAspectRatio: 1.3,
+                        ),
                         itemCount: _filteredOrdenesServicios.length,
-                        separatorBuilder:
-                            (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final orden = _filteredOrdenesServicios[index];
 
@@ -541,187 +789,34 @@ class _ListOrdenServicioState extends State<ListOrdenServicio> {
                             orElse: () => Padron(),
                           );
 
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.3),
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                          return CardCustom(
+                            folio: orden.folioOS ?? 'No disponible',
+                            prioridad: orden.prioridadOS ?? 'N/A',
+                            estado: orden.estadoOS ?? 'N/A',
+                            fecha: orden.fechaOS ?? 'No disponible',
+                            medio: medio.nombreMedio ?? 'No disponible',
+                            problema: tipoProblema.nombreTP ?? 'No disponible',
+                            padronInfo:
+                                '${padron.padronNombre ?? 'N/A'} (${padron.idPadron ?? ''})',
+                            padronDireccion: padron.padronDireccion ?? 'N/A',
+                            direccion:
+                                padron.padronDireccion ?? 'No disponible',
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => DetailsOrdenServicio(
+                                        ordenServicio: orden,
+                                      ),
                                 ),
-                              ],
-                              gradient: LinearGradient(
-                                colors: [Colors.blue.shade50, Colors.white],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Icon
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade100,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.work_outline,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // Información
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Folio
-                                        Text(
-                                          'Folio: ${orden.folioOS ?? 'No disponible'}',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade900,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        // Estado & Prioridad
-                                        Row(
-                                          children: [
-                                            //  Prioridad
-                                            Chip(
-                                              label: Text(
-                                                orden.prioridadOS ??
-                                                    'No disponible',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              backgroundColor:
-                                                  getPrioridadColor(
-                                                    orden.prioridadOS,
-                                                  ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                            ),
-                                            const SizedBox(width: 20),
-                                            //  Estado
-                                            Chip(
-                                              label: Text(
-                                                orden.estadoOS ??
-                                                    'No disponible',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              backgroundColor: getEstadoColor(
-                                                orden.estadoOS,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        // Fecha
-                                        Text(
-                                          'Fecha: ${orden.fechaOS ?? 'No disponible'}',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        // Medio y Problema
-                                        Text(
-                                          'Medio: ${medio.nombreMedio ?? 'No disponible'}',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Problema: ${tipoProblema.nombreTP ?? 'No disponible'}',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        // Información del padrón
-                                        Text(
-                                          'Padrón: ${padron.padronNombre ?? 'N/A'} (${padron.idPadron ?? ''})',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Dirección: ${padron.padronDireccion ?? 'No disponible'}',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Botón de acción
-                                  IconButton(
-                                    icon: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue.shade100,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.arrow_forward_ios,
-                                        color: Colors.blue,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    onPressed: () async {
-                                      final result = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => DetailsOrdenServicio(
-                                                ordenServicio: orden,
-                                              ),
-                                        ),
-                                      );
-                                      if (result == true || result != null) {
-                                        await _updateSingleOrder(
-                                          orden.idOrdenServicio!,
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
+                              );
+                              if (result == true || result != null) {
+                                await _updateSingleOrder(
+                                  orden.idOrdenServicio!,
+                                );
+                              }
+                            },
                           );
                         },
                       ),
