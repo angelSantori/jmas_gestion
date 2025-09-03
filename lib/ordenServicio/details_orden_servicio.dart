@@ -422,6 +422,39 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
     });
   }
 
+  Future<void> _recargarPagina() async {
+    setState(() {
+      _isLoadingEvaluacion = true;
+      _isLoadingTrabajos = true;
+      _isLoadingEntrevista = true;
+    });
+
+    try {
+      await Future.wait([
+        _loadAllUsers(),
+        _loadPadronInfo(),
+        _loadProblemaInfo(),
+        _loadData(),
+        _getUserId(),
+        _loadEvaluacion(),
+        _loadTrabajosRealizados(),
+        _loadFolioTR(),
+        _loadEntrevista(),
+      ]);
+
+      showOk(context, 'Página recargada correctamente');
+    } catch (e) {
+      print('Error al recargar: $e');
+      showError(context, 'Error al recargar los datos');
+    } finally {
+      setState(() {
+        _isLoadingEvaluacion = false;
+        _isLoadingTrabajos = false;
+        _isLoadingEntrevista = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -439,6 +472,13 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
           elevation: 2,
           backgroundColor: Colors.indigo.shade800,
           foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              onPressed: () => _recargarPagina(),
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Recargar página',
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -816,6 +856,35 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                           ),
                         ),
                       ),
+                    const SizedBox(width: 20),
+                    if (widget.ordenServicio.estadoOS == 'Pendiente' ||
+                        widget.ordenServicio.estadoOS == 'Aprobada - A' ||
+                        widget.ordenServicio.estadoOS == 'Revisión')
+                      PermissionWidget(
+                        permission: 'evaluar',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(35),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey,
+                                blurRadius: 6,
+                                offset: Offset(3, 5),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade800,
+                            ),
+                            onPressed: () => _showCancelacionDialog(context),
+                            child: const Text(
+                              'Cancelar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (widget.ordenServicio.estadoOS == 'Revisión')
                       PermissionWidget(
                         permission: 'evaluar',
@@ -956,7 +1025,7 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                             child: CustomListaDesplegable(
                               value: estadoSeleccionado,
                               labelText: 'Estado',
-                              items: ['Aprobar', 'Rechazar'],
+                              items: ['Aprobar', 'Rechazar', 'Cancelar'],
                               onChanged: (value) {
                                 setState(() {
                                   estadoSeleccionado = value;
@@ -1034,7 +1103,9 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                                 final nuevoEstado =
                                     estadoSeleccionado == 'Aprobar'
                                         ? 'Aprobada - A'
-                                        : 'Rechazada';
+                                        : estadoSeleccionado == 'Rechazar'
+                                        ? 'Rechazada'
+                                        : 'Cancelada';
 
                                 final ordenActualizada = widget.ordenServicio
                                     .copyWith(
@@ -1114,6 +1185,149 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                           )
                           : const Text(
                             'Guardar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showCancelacionDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final TextEditingController comentarioController = TextEditingController();
+    final EvaluacionOrdenServicioController evaluacionOSController =
+        EvaluacionOrdenServicioController();
+    final OrdenServicioController ordenServicioController =
+        OrdenServicioController();
+
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Cancelar Orden de Servicio'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSubmitting)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: CircularProgressIndicator(),
+                        ),
+                      const Text(
+                        '¿Está seguro de que desea cancelar esta orden de servicio?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextFielTexto(
+                        controller: comentarioController,
+                        labelText: 'Motivo de la cancelación',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingrese el motivo de la cancelación';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                  child: const Text('No cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade800,
+                  ),
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isSubmitting = true);
+
+                              try {
+                                // Actualizar estado a "Cancelada"
+                                final ordenActualizada = widget.ordenServicio
+                                    .copyWith(estadoOS: 'Cancelada');
+
+                                // Crear objeto de evaluación para la cancelación
+                                final evaluacion = EvaluacionOS(
+                                  idEvaluacionOrdenServicio: 0,
+                                  fechaEOS: DateFormat(
+                                    'dd/MM/yyyy HH:mm',
+                                  ).format(DateTime.now()),
+                                  comentariosEOS: comentarioController.text,
+                                  estadoEnviadoEOS: 'Cancelada',
+                                  idUser: int.tryParse(idUser!),
+                                  idOrdenServicio:
+                                      widget.ordenServicio.idOrdenServicio,
+                                );
+
+                                // Enviar cambios al servidor
+                                final successEvaluacion =
+                                    await evaluacionOSController.addEvOS(
+                                      evaluacion,
+                                    );
+                                final successOrden =
+                                    await ordenServicioController
+                                        .editOrdenServicio(ordenActualizada);
+
+                                if (successEvaluacion && successOrden) {
+                                  Navigator.pop(context);
+                                  showOk(context, 'Orden cancelada con éxito');
+
+                                  // Actualizar el estado local
+                                  setState(() {
+                                    widget.ordenServicio.estadoOS = 'Cancelada';
+                                  });
+
+                                  await _loadEvaluacion();
+                                  Navigator.pop(context, true);
+                                } else {
+                                  Navigator.pop(context);
+                                  showError(
+                                    context,
+                                    'Error al cancelar la orden',
+                                  );
+                                }
+                              } catch (e) {
+                                Navigator.pop(context);
+                                showError(context, 'Error: ${e.toString()}');
+                              } finally {
+                                setState(() => isSubmitting = false);
+                              }
+                            }
+                          },
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                          : const Text(
+                            'Confirmar cancelación',
                             style: TextStyle(color: Colors.white),
                           ),
                 ),
@@ -1372,9 +1586,40 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                           'ID Salida',
                           trabajos.folioSalida?.toString(),
                         ),
-                      if (trabajos.encuenstaTR != null &&
-                          trabajos.fotoRequiereMaterial64TR == null)
-                        buildRatingRow('Encuesta', trabajos.encuenstaTR),
+                      if (trabajos.estadoTR != null &&
+                          trabajos.fotoRequiereMaterial64TR == null) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  'Estado: ',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              Chip(
+                                label: Text(
+                                  trabajos.estadoTR ?? 'N/A',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: getEstadoTrabajoColor(
+                                  trabajos.estadoTR,
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1400,6 +1645,11 @@ class _DetailsOrdenServicioState extends State<DetailsOrdenServicio> {
                             trabajos.fotoDespues64TR,
                             'Después',
                           ),
+                        ],
+                        const SizedBox(width: 50),
+                        if (trabajos.firma64TR != null) ...[
+                          const SizedBox(height: 8),
+                          _buildImageFromBase64(trabajos.firma64TR, 'Firma'),
                         ],
                       ],
                     ),
