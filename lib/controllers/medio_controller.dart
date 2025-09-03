@@ -11,7 +11,7 @@ class MedioController {
   Future<List<Medios>> listMedios() async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/MedioOrdenServicios'),
+        Uri.parse('${_authService.apiNubeURL}/MedioOrdenServicios'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 
@@ -36,7 +36,7 @@ class MedioController {
   Future<Medios?> medioXId(int idMedio) async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/MedioOrdenServicios/$idMedio'),
+        Uri.parse('${_authService.apiNubeURL}/MedioOrdenServicios/$idMedio'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 

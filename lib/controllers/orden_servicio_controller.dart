@@ -14,7 +14,7 @@ class OrdenServicioController {
   Future<List<OrdenServicio>> listOrdenServicio() async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/OrdenServicios'),
+        Uri.parse('${_authService.apiNubeURL}/OrdenServicios'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 
@@ -36,7 +36,7 @@ class OrdenServicioController {
   Future<List<OrdenServicio>> listOSXFolio(String folio) async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/OrdenServicios/ByFolio/$folio'),
+        Uri.parse('${_authService.apiNubeURL}/OrdenServicios/ByFolio/$folio'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 
@@ -82,7 +82,7 @@ class OrdenServicioController {
   Future<OrdenServicio?> getOrdenServicioXId(int idOT) async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/OrdenServicios/$idOT'),
+        Uri.parse('${_authService.apiNubeURL}/OrdenServicios/$idOT'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
       if (response.statusCode == 200) {
@@ -103,7 +103,7 @@ class OrdenServicioController {
 
   //POST
   //Add
-  Future<bool> addOrdenServicio(OrdenServicio ordenServicio) async {
+  Future<OrdenServicio?> addOrdenServicio(OrdenServicio ordenServicio) async {
     try {
       final response = await http.post(
         Uri.parse('${_authService.apiURL}/OrdenServicios'),
@@ -112,16 +112,16 @@ class OrdenServicioController {
       );
 
       if (response.statusCode == 201) {
-        return true;
+        return OrdenServicio.fromMap(jsonDecode(response.body));
       } else {
         print(
           'Error addOrdenServicio | Ife | Controller: ${response.statusCode} - ${response.body}',
         );
-        return false;
+        return null;
       }
     } catch (e) {
       print('Error addOrdenServicio | Try | Controller: $e');
-      return false;
+      return null;
     }
   }
 
@@ -234,25 +234,32 @@ class OrdenServicio {
 
   factory OrdenServicio.fromMap(Map<String, dynamic> map) {
     return OrdenServicio(
-      idOrdenServicio: map['idOrdenServicio'] != null ? map['idOrdenServicio'] as int : null,
+      idOrdenServicio:
+          map['idOrdenServicio'] != null ? map['idOrdenServicio'] as int : null,
       folioOS: map['folioOS'] != null ? map['folioOS'] as String : null,
       fechaOS: map['fechaOS'] != null ? map['fechaOS'] as String : null,
       materialOS: map['materialOS'] != null ? map['materialOS'] as bool : null,
       estadoOS: map['estadoOS'] != null ? map['estadoOS'] as String : null,
-      prioridadOS: map['prioridadOS'] != null ? map['prioridadOS'] as String : null,
-      contactoOS: map['contactoOS'] != null ? map['contactoOS'] as String : null,
-      comentarioOS: map['comentarioOS'] != null ? map['comentarioOS'] as String : null,
+      prioridadOS:
+          map['prioridadOS'] != null ? map['prioridadOS'] as String : null,
+      contactoOS:
+          map['contactoOS'] != null ? map['contactoOS'] as String : null,
+      comentarioOS:
+          map['comentarioOS'] != null ? map['comentarioOS'] as String : null,
       idUser: map['idUser'] != null ? map['idUser'] as int : null,
       idPadron: map['idPadron'] != null ? map['idPadron'] as int : null,
-      idTipoProblema: map['idTipoProblema'] != null ? map['idTipoProblema'] as int : null,
+      idTipoProblema:
+          map['idTipoProblema'] != null ? map['idTipoProblema'] as int : null,
       idMedio: map['idMedio'] != null ? map['idMedio'] as int : null,
-      idUserAsignado: map['idUserAsignado'] != null ? map['idUserAsignado'] as int : null,
+      idUserAsignado:
+          map['idUserAsignado'] != null ? map['idUserAsignado'] as int : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory OrdenServicio.fromJson(String source) => OrdenServicio.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory OrdenServicio.fromJson(String source) =>
+      OrdenServicio.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -262,37 +269,36 @@ class OrdenServicio {
   @override
   bool operator ==(covariant OrdenServicio other) {
     if (identical(this, other)) return true;
-  
-    return 
-      other.idOrdenServicio == idOrdenServicio &&
-      other.folioOS == folioOS &&
-      other.fechaOS == fechaOS &&
-      other.materialOS == materialOS &&
-      other.estadoOS == estadoOS &&
-      other.prioridadOS == prioridadOS &&
-      other.contactoOS == contactoOS &&
-      other.comentarioOS == comentarioOS &&
-      other.idUser == idUser &&
-      other.idPadron == idPadron &&
-      other.idTipoProblema == idTipoProblema &&
-      other.idMedio == idMedio &&
-      other.idUserAsignado == idUserAsignado;
+
+    return other.idOrdenServicio == idOrdenServicio &&
+        other.folioOS == folioOS &&
+        other.fechaOS == fechaOS &&
+        other.materialOS == materialOS &&
+        other.estadoOS == estadoOS &&
+        other.prioridadOS == prioridadOS &&
+        other.contactoOS == contactoOS &&
+        other.comentarioOS == comentarioOS &&
+        other.idUser == idUser &&
+        other.idPadron == idPadron &&
+        other.idTipoProblema == idTipoProblema &&
+        other.idMedio == idMedio &&
+        other.idUserAsignado == idUserAsignado;
   }
 
   @override
   int get hashCode {
     return idOrdenServicio.hashCode ^
-      folioOS.hashCode ^
-      fechaOS.hashCode ^
-      materialOS.hashCode ^
-      estadoOS.hashCode ^
-      prioridadOS.hashCode ^
-      contactoOS.hashCode ^
-      comentarioOS.hashCode ^
-      idUser.hashCode ^
-      idPadron.hashCode ^
-      idTipoProblema.hashCode ^
-      idMedio.hashCode ^
-      idUserAsignado.hashCode;
+        folioOS.hashCode ^
+        fechaOS.hashCode ^
+        materialOS.hashCode ^
+        estadoOS.hashCode ^
+        prioridadOS.hashCode ^
+        contactoOS.hashCode ^
+        comentarioOS.hashCode ^
+        idUser.hashCode ^
+        idPadron.hashCode ^
+        idTipoProblema.hashCode ^
+        idMedio.hashCode ^
+        idUserAsignado.hashCode;
   }
 }

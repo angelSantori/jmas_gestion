@@ -1,9 +1,6 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 // Librerías
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import 'package:jmas_gestion/service/auth_service.dart';
 
 class TipoProblemaController {
@@ -14,7 +11,7 @@ class TipoProblemaController {
   Future<List<TipoProblema>> listTipoProblema() async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/TipoProblemas'),
+        Uri.parse('${_authService.apiNubeURL}/TipoProblemas'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 
@@ -37,7 +34,7 @@ class TipoProblemaController {
   Future<TipoProblema?> tipoProblemaXId(int idTP) async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/TipoProblemas/$idTP'),
+        Uri.parse('${_authService.apiNubeURL}/TipoProblemas/$idTP'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 

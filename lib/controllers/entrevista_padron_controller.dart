@@ -10,7 +10,7 @@ class EntrevistaPadronController {
   Future<List<EntrevistaPadron>> getEPxOS(int idOS) async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/EntrevistaPadrons/ByOS/$idOS'),
+        Uri.parse('${_authService.apiNubeURL}/EntrevistaPadrons/ByOS/$idOS'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 

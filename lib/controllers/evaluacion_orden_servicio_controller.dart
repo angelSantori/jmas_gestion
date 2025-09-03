@@ -11,7 +11,7 @@ class EvaluacionOrdenServicioController {
   Future<List<EvaluacionOS>> listEvOS() async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/EvaluacionOrdenServicios'),
+        Uri.parse('${_authService.apiNubeURL}/EvaluacionOrdenServicios'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 
@@ -34,7 +34,7 @@ class EvaluacionOrdenServicioController {
   Future<List<EvaluacionOS>> listEvXidOS(int idOS) async {
     try {
       final response = await http.get(
-        Uri.parse('${_authService.apiURL}/EvaluacionOrdenServicios/ByOS/$idOS'),
+        Uri.parse('${_authService.apiNubeURL}/EvaluacionOrdenServicios/ByOS/$idOS'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
       );
 
