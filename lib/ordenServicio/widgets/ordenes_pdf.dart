@@ -49,17 +49,17 @@ class OrdenesPDF {
     );
     final smallStyle = const pw.TextStyle(fontSize: 8);
 
+    // Usar MultiPage en lugar de Page para manejar múltiples páginas
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4.copyWith(
           marginLeft: 36,
           marginRight: 36,
           marginTop: 36,
           marginBottom: 36,
         ),
-        build: (pw.Context context) {
+        header: (pw.Context context) {
           return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               // Encabezado
               pw.Row(
@@ -96,98 +96,97 @@ class OrdenesPDF {
                   ),
                 ],
               ),
-
               pw.Divider(thickness: 1),
               pw.SizedBox(height: 15),
-
-              // Información del reporte
-              pw.Text('INFORMACIÓN DEL REPORTE', style: titleStyle),
-              pw.SizedBox(height: 10),
-
-              pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text('Rango de fechas:', style: boldStyle),
-                      pw.Text(
-                        '${DateFormat('dd/MM/yyyy').format(rangoFechas.start)} - ${DateFormat('dd/MM/yyyy').format(rangoFechas.end)}',
-                        style: normalStyle,
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(width: 50),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text('Tipo de servicio:', style: boldStyle),
-                      pw.Text(
-                        tipoProblemaFiltro != null
-                            ? '${tipoProblemaFiltro.idTipoProblema} - ${tipoProblemaFiltro.nombreTP}'
-                            : 'Todos',
-                        style: normalStyle,
-                      ),
-                    ],
-                  ),
-                ],
+            ],
+          );
+        },
+        footer: (pw.Context context) {
+          return pw.Column(
+            children: [
+              pw.Divider(thickness: 1),
+              pw.Center(
+                child: pw.Text(
+                  'Página ${context.pageNumber} de ${context.pagesCount} - Generado el $fechaGeneracion',
+                  style: smallStyle,
+                ),
               ),
+            ],
+          );
+        },
+        build: (pw.Context context) {
+          return [
+            // Información del reporte
+            pw.Text('INFORMACIÓN DEL REPORTE', style: titleStyle),
+            pw.SizedBox(height: 10),
 
-              pw.SizedBox(height: 10),
-              pw.Text('Total de órdenes: ${ordenes.length}', style: boldStyle),
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Rango de fechas:', style: boldStyle),
+                    pw.Text(
+                      '${DateFormat('dd/MM/yyyy').format(rangoFechas.start)} - ${DateFormat('dd/MM/yyyy').format(rangoFechas.end)}',
+                      style: normalStyle,
+                    ),
+                  ],
+                ),
+                pw.SizedBox(width: 50),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Tipo de servicio:', style: boldStyle),
+                    pw.Text(
+                      tipoProblemaFiltro != null
+                          ? '${tipoProblemaFiltro.idTipoProblema} - ${tipoProblemaFiltro.nombreTP}'
+                          : 'Todos',
+                      style: normalStyle,
+                    ),
+                  ],
+                ),
+              ],
+            ),
 
-              pw.SizedBox(height: 20),
-              pw.Divider(thickness: 1),
-              pw.SizedBox(height: 15),
+            pw.SizedBox(height: 10),
+            pw.Text('Total de órdenes: ${ordenes.length}', style: boldStyle),
 
-              // Lista de órdenes
-              pw.Text('ÓRDENES DE SERVICIO', style: titleStyle),
-              pw.SizedBox(height: 10),
+            pw.SizedBox(height: 20),
+            pw.Divider(thickness: 1),
+            pw.SizedBox(height: 15),
 
-              // Tabla de órdenes - MODIFICADA: quitamos prioridad, medio y estado
-              pw.Table(
-                border: pw.TableBorder.all(),
-                columnWidths: {
-                  0: const pw.FlexColumnWidth(1.2), // Folio
-                  1: const pw.FlexColumnWidth(2), // Fecha
-                  2: const pw.FlexColumnWidth(2.5), // Tipo Servicio
-                  3: const pw.FlexColumnWidth(1.5), // ID Padrón
-                  4: const pw.FlexColumnWidth(3), // Nombre Padrón
-                  5: const pw.FlexColumnWidth(3), // Dirección Padrón
-                },
-                children: [
-                  // Encabezado de la tabla - MODIFICADO
-                  pw.TableRow(
-                    children: [
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Folio', style: boldStyle),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Fecha', style: boldStyle),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Tipo Servicio', style: boldStyle),
-                      ),
-                      // Nuevos encabezados para padrón
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('ID Padrón', style: boldStyle),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Nombre Padrón', style: boldStyle),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Dirección', style: boldStyle),
-                      ),
-                    ],
-                  ),
-                  // Datos de las órdenes - MODIFICADO
-                  ...ordenes.map((orden) {
+            // Lista de órdenes
+            pw.Text('ÓRDENES DE SERVICIO', style: titleStyle),
+            pw.SizedBox(height: 10),
+
+            // Tabla de órdenes
+            pw.Table.fromTextArray(
+              context: context,
+              border: pw.TableBorder.all(),
+              headerStyle: boldStyle,
+              cellStyle: smallStyle,
+              headerDecoration: const pw.BoxDecoration(
+                color: PdfColors.grey300,
+              ),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1.2), // Folio
+                1: const pw.FlexColumnWidth(2), // Fecha
+                2: const pw.FlexColumnWidth(2.5), // Tipo Servicio
+                3: const pw.FlexColumnWidth(1.5), // ID Padrón
+                4: const pw.FlexColumnWidth(3), // Nombre Padrón
+                5: const pw.FlexColumnWidth(3), // Dirección Padrón
+              },
+              headers: [
+                'Folio',
+                'Fecha',
+                'Tipo Servicio',
+                'ID Padrón',
+                'Nombre Padrón',
+                'Dirección',
+              ],
+              data:
+                  ordenes.map((orden) {
                     final tipoProblema = tiposProblema.firstWhere(
                       (tp) => tp.idTipoProblema == orden.idTipoProblema,
                       orElse: () => TipoProblema(),
@@ -199,70 +198,17 @@ class OrdenesPDF {
                       orElse: () => Padron(),
                     );
 
-                    return pw.TableRow(
-                      children: [
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text(
-                            orden.folioOS ?? 'N/A',
-                            style: smallStyle,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text(
-                            orden.fechaOS ?? 'N/A',
-                            style: smallStyle,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text(
-                            tipoProblema.nombreTP ?? 'N/A',
-                            style: smallStyle,
-                          ),
-                        ),
-                        // Nuevos campos para padrón
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text(
-                            padron.idPadron?.toString() ?? 'N/A',
-                            style: smallStyle,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text(
-                            padron.padronNombre ?? 'N/A',
-                            style: smallStyle,
-                            maxLines: 2,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text(
-                            padron.padronDireccion ?? 'N/A',
-                            style: smallStyle,
-                            maxLines: 2,
-                          ),
-                        ),
-                      ],
-                    );
+                    return [
+                      orden.folioOS ?? 'N/A',
+                      orden.fechaOS ?? 'N/A',
+                      tipoProblema.nombreTP ?? 'N/A',
+                      padron.idPadron?.toString() ?? 'N/A',
+                      padron.padronNombre ?? 'N/A',
+                      padron.padronDireccion ?? 'N/A',
+                    ];
                   }).toList(),
-                ],
-              ),
-
-              // Pie de página
-              pw.SizedBox(height: 30),
-              pw.Divider(thickness: 1),
-              pw.Center(
-                child: pw.Text(
-                  'Generado el $fechaGeneracion',
-                  style: smallStyle,
-                ),
-              ),
-            ],
-          );
+            ),
+          ];
         },
       ),
     );
