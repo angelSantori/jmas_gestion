@@ -33,7 +33,6 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   final TextEditingController _contactoCTR = TextEditingController();
   final TextEditingController _comentarioOS = TextEditingController();
 
-  String? _codFolio;
   final String _showFecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
   bool _isLoading = false;
@@ -58,15 +57,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
   @override
   void initState() {
     super.initState();
-    _loadFolioOT();
     _loadData();
-  }
-
-  Future<void> _loadFolioOT() async {
-    final fetchFolioOT = await _ordenServicioController.getNextOSFolio();
-    setState(() {
-      _codFolio = fetchFolioOT;
-    });
   }
 
   Future<void> _loadData() async {
@@ -92,18 +83,20 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
     setState(() => _isLoading = true);
 
     try {
-      final ordenTrabajo = _crearOS();
-      final success = await _ordenServicioController.addOrdenServicio(
-        ordenTrabajo,
+      final ordenServicio = _crearOS();
+      final nuevaOrden = await _ordenServicioController.addOrdenServicio(
+        ordenServicio,
       );
 
-      if (success && mounted) {
+      if (nuevaOrden != null && mounted) {
+        final folioGenerado = nuevaOrden.folioOS;
+
         await generarPDFOrdenServicio(
           padron: _selectedPadron!,
           tipoProblema: _selectedTipoProblema!,
           medio: _selectedMedio!,
           fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
-          folioOS: _codFolio!,
+          folioOS: folioGenerado!,
           idUser: widget.idUser!,
           userName: widget.userName!,
           prioridadOS: _selectedPrioridad!,
@@ -139,14 +132,13 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
       _selectedTipoProblema = null;
       _comentarioOS.clear();
       _selectedPadron = null;
-      _loadFolioOT();
     });
   }
 
   OrdenServicio _crearOS() {
     return OrdenServicio(
       idOrdenServicio: 0,
-      folioOS: _codFolio,
+      folioOS: '',
       fechaOS: DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.now()),
       estadoOS: 'Pendiente',
       prioridadOS: _selectedPrioridad,
@@ -189,12 +181,12 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Expanded(
-                            child: buildCabeceraItem(
-                              'Folio',
-                              _codFolio ?? 'Cargando...',
-                            ),
-                          ),
+                          // Expanded(
+                          //   child: buildCabeceraItem(
+                          //     'Folio',
+                          //     _codFolio ?? 'Cargando...',
+                          //   ),
+                          // ),
                           Expanded(
                             child: buildCabeceraItem('Fecha', _showFecha),
                           ),
@@ -433,6 +425,7 @@ class _AddOrdenServicioState extends State<AddOrdenServicio> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
