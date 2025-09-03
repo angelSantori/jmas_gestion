@@ -3,11 +3,14 @@ import 'package:jmas_gestion/controllers/users_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String apiURL = 'https://localhost:5001/api';
-  //final String apiURL = 'http://200.200.200.155:5000/api';
-  //final String apiURL = 'http://192.168.0.15:8080/api';
+  //  Producción
+  //final String apiURL = 'http://200.200.200.155:5000/api'; //  Oficina
+  //final String apiNubeURL = 'http://154.12.243.37:80/api'; //   Server
 
+  //  Local
   Users? _currentUser;
+  final String apiURL = 'https://localhost:5001/api';
+  final String apiNubeURL = 'https://localhost:5001/api';
 
   // Guardar datos del usuario al iniciar sesión
   Future<void> saveUserData(Users user) async {

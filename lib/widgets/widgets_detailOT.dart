@@ -36,6 +36,8 @@ Color getEstadoColor(String? estado) {
       return Colors.red;
     case 'cerrada':
       return Colors.blue.shade900;
+    case 'cancelada':
+      return Colors.red.shade900;
     default:
       return Colors.grey;
   }

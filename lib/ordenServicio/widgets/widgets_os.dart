@@ -42,3 +42,19 @@ Widget buildStarRating(int rating) {
     }),
   );
 }
+
+// Agrega esta función en tu clase _DetailsOrdenServicioState
+Color getEstadoTrabajoColor(String? estado) {
+  if (estado == null) return Colors.grey;
+
+  switch (estado.toLowerCase()) {
+    case 'completado':
+      return Colors.green;
+    case 'pendiente':
+      return Colors.orange;
+    case 'falla':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
