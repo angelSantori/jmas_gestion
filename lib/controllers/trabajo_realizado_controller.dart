@@ -2,6 +2,7 @@
 // Librerías
 import 'dart:convert';
 
+import 'package:flutter/src/widgets/framework.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:jmas_gestion/service/auth_service.dart';
@@ -336,4 +337,8 @@ class TrabajoRealizado {
       problemaNombre.hashCode ^
       folioSalida.hashCode;
   }
+
+  get isEmpty => null;
+
+  map(Widget Function(dynamic listTrabajos) param0) {}
 }
